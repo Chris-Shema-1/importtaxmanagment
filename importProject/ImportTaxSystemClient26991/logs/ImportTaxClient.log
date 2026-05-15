@@ -1,0 +1,559 @@
+2026-05-13 17:01:11.460 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 17:01:11.462 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Starting Import Tax Management System Client
+2026-05-13 17:01:11.463 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 17:01:11.463 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Applying FlatLaf Dark theme
+2026-05-13 17:01:11.983 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Theme applied successfully
+2026-05-13 17:01:11.999 [AWT-EventQueue-0] ERROR com.importtax.client.AppLauncher - Failed to initialize application
+java.lang.RuntimeException: Uncompilable code - cannot find symbol
+  symbol:   method setupLayout()
+  location: class com.importtax.client.ui.LoginFrame
+	at com.importtax.client.ui.LoginFrame.<init>(LoginFrame.java:1)
+	at com.importtax.client.AppLauncher.initializeApplication(AppLauncher.java:43)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:771)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:722)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:716)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:741)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+2026-05-13 17:08:05.024 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 17:08:05.026 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Starting Import Tax Management System Client
+2026-05-13 17:08:05.027 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 17:08:05.028 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Applying FlatLaf Dark theme
+2026-05-13 17:08:05.427 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Theme applied successfully
+2026-05-13 17:08:05.516 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Initializing LoginFrame
+2026-05-13 17:08:07.157 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Application launched successfully
+2026-05-13 17:10:24.954 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 17:10:24.955 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Starting Import Tax Management System Client
+2026-05-13 17:10:24.956 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 17:10:24.956 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Applying FlatLaf Dark theme
+2026-05-13 17:10:25.236 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Theme applied successfully
+2026-05-13 17:10:25.308 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Initializing LoginFrame
+2026-05-13 17:10:25.698 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Application launched successfully
+2026-05-13 17:10:54.174 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Login attempt initiated
+2026-05-13 17:10:54.176 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Attempting to authenticate user: shema
+2026-05-13 17:10:54.196 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - User authenticated successfully: shema
+2026-05-13 17:10:57.483 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Opening DashboardFrame
+2026-05-13 17:10:57.486 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Initializing DashboardFrame
+2026-05-13 17:10:57.491 [AWT-EventQueue-0] ERROR com.importtax.client.ui.LoginFrame - Authentication failed
+java.lang.RuntimeException: Uncompilable code - incompatible types: java.awt.Color cannot be converted to java.lang.String
+	at com.importtax.client.ui.DashboardFrame.createDashboardCards(DashboardFrame.java:1)
+	at com.importtax.client.ui.DashboardFrame.createContentPanel(DashboardFrame.java:192)
+	at com.importtax.client.ui.DashboardFrame.setupLayout(DashboardFrame.java:82)
+	at com.importtax.client.ui.DashboardFrame.<init>(DashboardFrame.java:47)
+	at com.importtax.client.ui.LoginFrame.authenticateUser(LoginFrame.java:309)
+	at com.importtax.client.ui.LoginFrame.handleLogin(LoginFrame.java:280)
+	at com.importtax.client.ui.LoginFrame.lambda$createFormPanel$0(LoginFrame.java:181)
+	at java.desktop/javax.swing.AbstractButton.fireActionPerformed(AbstractButton.java:1972)
+	at java.desktop/javax.swing.AbstractButton$Handler.actionPerformed(AbstractButton.java:2313)
+	at java.desktop/javax.swing.DefaultButtonModel.fireActionPerformed(DefaultButtonModel.java:405)
+	at java.desktop/javax.swing.DefaultButtonModel.setPressed(DefaultButtonModel.java:262)
+	at java.desktop/javax.swing.plaf.basic.BasicButtonListener.mouseReleased(BasicButtonListener.java:279)
+	at java.desktop/java.awt.AWTEventMulticaster.mouseReleased(AWTEventMulticaster.java:297)
+	at java.desktop/java.awt.Component.processMouseEvent(Component.java:6626)
+	at java.desktop/javax.swing.JComponent.processMouseEvent(JComponent.java:3389)
+	at java.desktop/java.awt.Component.processEvent(Component.java:6391)
+	at java.desktop/java.awt.Container.processEvent(Container.java:2266)
+	at java.desktop/java.awt.Component.dispatchEventImpl(Component.java:5001)
+	at java.desktop/java.awt.Container.dispatchEventImpl(Container.java:2324)
+	at java.desktop/java.awt.Component.dispatchEvent(Component.java:4833)
+	at java.desktop/java.awt.LightweightDispatcher.retargetMouseEvent(Container.java:4948)
+	at java.desktop/java.awt.LightweightDispatcher.processMouseEvent(Container.java:4575)
+	at java.desktop/java.awt.LightweightDispatcher.dispatchEvent(Container.java:4516)
+	at java.desktop/java.awt.Container.dispatchEventImpl(Container.java:2310)
+	at java.desktop/java.awt.Window.dispatchEventImpl(Window.java:2780)
+	at java.desktop/java.awt.Component.dispatchEvent(Component.java:4833)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:722)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:716)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:97)
+	at java.desktop/java.awt.EventQueue$5.run(EventQueue.java:746)
+	at java.desktop/java.awt.EventQueue$5.run(EventQueue.java:744)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:743)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+2026-05-13 17:11:06.206 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Login attempt initiated
+2026-05-13 17:11:06.206 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Attempting to authenticate user: shema
+2026-05-13 17:11:06.206 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - User authenticated successfully: shema
+2026-05-13 17:11:08.455 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Opening DashboardFrame
+2026-05-13 17:11:08.456 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Initializing DashboardFrame
+2026-05-13 17:11:08.461 [AWT-EventQueue-0] ERROR com.importtax.client.ui.LoginFrame - Authentication failed
+java.lang.RuntimeException: Uncompilable code - incompatible types: java.awt.Color cannot be converted to java.lang.String
+	at com.importtax.client.ui.DashboardFrame.createDashboardCards(DashboardFrame.java:1)
+	at com.importtax.client.ui.DashboardFrame.createContentPanel(DashboardFrame.java:192)
+	at com.importtax.client.ui.DashboardFrame.setupLayout(DashboardFrame.java:82)
+	at com.importtax.client.ui.DashboardFrame.<init>(DashboardFrame.java:47)
+	at com.importtax.client.ui.LoginFrame.authenticateUser(LoginFrame.java:309)
+	at com.importtax.client.ui.LoginFrame.handleLogin(LoginFrame.java:280)
+	at com.importtax.client.ui.LoginFrame.lambda$createFormPanel$0(LoginFrame.java:181)
+	at java.desktop/javax.swing.AbstractButton.fireActionPerformed(AbstractButton.java:1972)
+	at java.desktop/javax.swing.AbstractButton$Handler.actionPerformed(AbstractButton.java:2313)
+	at java.desktop/javax.swing.DefaultButtonModel.fireActionPerformed(DefaultButtonModel.java:405)
+	at java.desktop/javax.swing.DefaultButtonModel.setPressed(DefaultButtonModel.java:262)
+	at java.desktop/javax.swing.plaf.basic.BasicButtonListener.mouseReleased(BasicButtonListener.java:279)
+	at java.desktop/java.awt.AWTEventMulticaster.mouseReleased(AWTEventMulticaster.java:297)
+	at java.desktop/java.awt.Component.processMouseEvent(Component.java:6626)
+	at java.desktop/javax.swing.JComponent.processMouseEvent(JComponent.java:3389)
+	at java.desktop/java.awt.Component.processEvent(Component.java:6391)
+	at java.desktop/java.awt.Container.processEvent(Container.java:2266)
+	at java.desktop/java.awt.Component.dispatchEventImpl(Component.java:5001)
+	at java.desktop/java.awt.Container.dispatchEventImpl(Container.java:2324)
+	at java.desktop/java.awt.Component.dispatchEvent(Component.java:4833)
+	at java.desktop/java.awt.LightweightDispatcher.retargetMouseEvent(Container.java:4948)
+	at java.desktop/java.awt.LightweightDispatcher.processMouseEvent(Container.java:4575)
+	at java.desktop/java.awt.LightweightDispatcher.dispatchEvent(Container.java:4516)
+	at java.desktop/java.awt.Container.dispatchEventImpl(Container.java:2310)
+	at java.desktop/java.awt.Window.dispatchEventImpl(Window.java:2780)
+	at java.desktop/java.awt.Component.dispatchEvent(Component.java:4833)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:773)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:722)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:716)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:97)
+	at java.desktop/java.awt.EventQueue$5.run(EventQueue.java:746)
+	at java.desktop/java.awt.EventQueue$5.run(EventQueue.java:744)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:743)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+2026-05-13 17:15:54.964 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 17:15:54.967 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Starting Import Tax Management System Client
+2026-05-13 17:15:54.968 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 17:15:54.968 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Applying FlatLaf Dark theme
+2026-05-13 17:15:55.268 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Theme applied successfully
+2026-05-13 17:15:55.334 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Initializing LoginFrame
+2026-05-13 17:15:55.751 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Application launched successfully
+2026-05-13 17:22:29.160 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 17:22:29.164 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Starting Import Tax Management System Client
+2026-05-13 17:22:29.164 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 17:22:29.164 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Applying FlatLaf Dark theme
+2026-05-13 17:22:29.463 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Theme applied successfully
+2026-05-13 17:22:29.535 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Initializing LoginFrame
+2026-05-13 17:22:29.958 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Application launched successfully
+2026-05-13 17:22:39.370 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Login attempt initiated
+2026-05-13 17:22:39.370 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Attempting to authenticate user: admin
+2026-05-13 17:22:39.370 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - User authenticated successfully: admin
+2026-05-13 17:22:43.816 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Opening DashboardFrame
+2026-05-13 17:22:43.816 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Initializing DashboardFrame
+2026-05-13 17:22:50.605 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: ? Users
+2026-05-13 17:22:51.465 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: ? Dashboard
+2026-05-13 17:22:52.201 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: ? Import Items
+2026-05-13 17:22:52.743 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: ? Taxes
+2026-05-13 17:22:53.541 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: ? Invoices
+2026-05-13 17:22:54.416 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: ? Payments
+2026-05-13 17:22:54.849 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: ? Reports
+2026-05-13 17:22:55.229 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: ? Notifications
+2026-05-13 17:22:56.516 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - User logging out
+2026-05-13 17:22:57.841 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Initializing LoginFrame
+2026-05-13 17:23:04.758 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Login attempt initiated
+2026-05-13 17:23:04.759 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Attempting to authenticate user: admin
+2026-05-13 17:23:04.760 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - User authenticated successfully: admin
+2026-05-13 17:23:06.468 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Opening DashboardFrame
+2026-05-13 17:23:06.469 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Initializing DashboardFrame
+2026-05-13 17:23:08.345 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: ? Dashboard
+2026-05-13 17:23:09.274 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: ? Users
+2026-05-13 17:23:09.646 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: ? Import Items
+2026-05-13 17:23:10.064 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: ? Taxes
+2026-05-13 17:23:10.498 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: ? Invoices
+2026-05-13 17:23:10.931 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: ? Payments
+2026-05-13 17:23:11.381 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: ? Reports
+2026-05-13 17:23:11.714 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: ? Notifications
+2026-05-13 17:24:10.396 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - User logging out
+2026-05-13 17:24:11.628 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Initializing LoginFrame
+2026-05-13 17:41:08.706 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 17:41:08.709 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Starting Import Tax Management System Client
+2026-05-13 17:41:08.710 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 17:41:08.711 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Applying FlatLaf Dark theme
+2026-05-13 17:41:08.968 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Theme applied successfully
+2026-05-13 17:41:09.039 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Initializing LoginFrame
+2026-05-13 17:41:09.589 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Application launched successfully
+2026-05-13 17:41:26.827 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Login attempt initiated
+2026-05-13 17:41:26.827 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Attempting to authenticate user: admin
+2026-05-13 17:41:26.845 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - User authenticated successfully: admin
+2026-05-13 17:41:27.349 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Opening DashboardFrame
+2026-05-13 17:41:27.356 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Initializing DashboardFrame for user: admin
+2026-05-13 17:41:31.065 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Action clicked: New Import
+2026-05-13 17:41:32.219 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Action clicked: View Reports
+2026-05-13 17:41:33.016 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Action clicked: Process Payment
+2026-05-13 17:41:33.931 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Action clicked: User Management
+2026-05-13 17:41:36.886 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Users
+2026-05-13 17:41:37.522 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Import Items
+2026-05-13 17:41:37.995 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Taxes
+2026-05-13 17:41:38.458 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Invoices
+2026-05-13 17:41:39.519 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Reports
+2026-05-13 17:41:41.609 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Settings
+2026-05-13 17:41:42.198 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Notifications
+2026-05-13 17:41:42.848 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Payments
+2026-05-13 17:41:45.502 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Dashboard
+2026-05-13 17:41:48.649 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - User admin logging out
+2026-05-13 17:41:50.349 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Initializing LoginFrame
+2026-05-13 19:06:54.825 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 19:06:54.827 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Starting Import Tax Management System Client
+2026-05-13 19:06:54.828 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 19:06:54.830 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Applying FlatLaf Dark theme
+2026-05-13 19:06:55.167 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Theme applied successfully
+2026-05-13 19:06:55.259 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Initializing LoginFrame
+2026-05-13 19:06:55.263 [AWT-EventQueue-0] INFO  c.importtax.client.rmi.RmiConnection - Connecting to RMI registry at: rmi://localhost:5000/
+2026-05-13 19:06:55.504 [AWT-EventQueue-0] ERROR c.importtax.client.rmi.RmiConnection - Failed to connect to RMI registry at rmi://localhost:5000/
+java.rmi.ConnectException: Connection refused to host: localhost; nested exception is: 
+	java.net.ConnectException: Connection refused: connect
+	at java.rmi/sun.rmi.transport.tcp.TCPEndpoint.newSocket(TCPEndpoint.java:626)
+	at java.rmi/sun.rmi.transport.tcp.TCPChannel.createConnection(TCPChannel.java:217)
+	at java.rmi/sun.rmi.transport.tcp.TCPChannel.newConnection(TCPChannel.java:204)
+	at java.rmi/sun.rmi.server.UnicastRef.newCall(UnicastRef.java:344)
+	at java.rmi/sun.rmi.registry.RegistryImpl_Stub.list(RegistryImpl_Stub.java:90)
+	at com.importtax.client.rmi.RmiConnection.initialize(RmiConnection.java:43)
+	at com.importtax.client.ui.LoginFrame.initializeRmiService(LoginFrame.java:75)
+	at com.importtax.client.ui.LoginFrame.<init>(LoginFrame.java:63)
+	at com.importtax.client.ui.LoginFrame.<init>(LoginFrame.java:58)
+	at com.importtax.client.AppLauncher.initializeApplication(AppLauncher.java:43)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:771)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:722)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:716)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:741)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+Caused by: java.net.ConnectException: Connection refused: connect
+	at java.base/sun.nio.ch.Net.connect0(Native Method)
+	at java.base/sun.nio.ch.Net.connect(Net.java:579)
+	at java.base/sun.nio.ch.Net.connect(Net.java:568)
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593)
+	at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327)
+	at java.base/java.net.Socket.connect(Socket.java:633)
+	at java.base/java.net.Socket.connect(Socket.java:583)
+	at java.base/java.net.Socket.<init>(Socket.java:507)
+	at java.base/java.net.Socket.<init>(Socket.java:287)
+	at java.rmi/sun.rmi.transport.tcp.TCPDirectSocketFactory.createSocket(TCPDirectSocketFactory.java:40)
+	at java.rmi/sun.rmi.transport.tcp.TCPEndpoint.newSocket(TCPEndpoint.java:620)
+	... 22 common frames omitted
+2026-05-13 19:06:55.509 [AWT-EventQueue-0] WARN  com.importtax.client.ui.LoginFrame - UserService is unavailable for login
+java.rmi.ConnectException: Connection refused to host: localhost; nested exception is: 
+	java.net.ConnectException: Connection refused: connect
+	at java.rmi/sun.rmi.transport.tcp.TCPEndpoint.newSocket(TCPEndpoint.java:626)
+	at java.rmi/sun.rmi.transport.tcp.TCPChannel.createConnection(TCPChannel.java:217)
+	at java.rmi/sun.rmi.transport.tcp.TCPChannel.newConnection(TCPChannel.java:204)
+	at java.rmi/sun.rmi.server.UnicastRef.newCall(UnicastRef.java:344)
+	at java.rmi/sun.rmi.registry.RegistryImpl_Stub.list(RegistryImpl_Stub.java:90)
+	at com.importtax.client.rmi.RmiConnection.initialize(RmiConnection.java:43)
+	at com.importtax.client.ui.LoginFrame.initializeRmiService(LoginFrame.java:75)
+	at com.importtax.client.ui.LoginFrame.<init>(LoginFrame.java:63)
+	at com.importtax.client.ui.LoginFrame.<init>(LoginFrame.java:58)
+	at com.importtax.client.AppLauncher.initializeApplication(AppLauncher.java:43)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:771)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:722)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:716)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:741)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+Caused by: java.net.ConnectException: Connection refused: connect
+	at java.base/sun.nio.ch.Net.connect0(Native Method)
+	at java.base/sun.nio.ch.Net.connect(Net.java:579)
+	at java.base/sun.nio.ch.Net.connect(Net.java:568)
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593)
+	at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327)
+	at java.base/java.net.Socket.connect(Socket.java:633)
+	at java.base/java.net.Socket.connect(Socket.java:583)
+	at java.base/java.net.Socket.<init>(Socket.java:507)
+	at java.base/java.net.Socket.<init>(Socket.java:287)
+	at java.rmi/sun.rmi.transport.tcp.TCPDirectSocketFactory.createSocket(TCPDirectSocketFactory.java:40)
+	at java.rmi/sun.rmi.transport.tcp.TCPEndpoint.newSocket(TCPEndpoint.java:620)
+	... 22 common frames omitted
+2026-05-13 19:06:56.044 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Application launched successfully
+2026-05-13 19:07:45.791 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 19:07:45.795 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Starting Import Tax Management System Client
+2026-05-13 19:07:45.796 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 19:07:45.799 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Applying FlatLaf Dark theme
+2026-05-13 19:07:46.245 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Theme applied successfully
+2026-05-13 19:07:46.355 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Initializing LoginFrame
+2026-05-13 19:07:46.357 [AWT-EventQueue-0] INFO  c.importtax.client.rmi.RmiConnection - Connecting to RMI registry at: rmi://localhost:5000/
+2026-05-13 19:07:46.531 [AWT-EventQueue-0] ERROR c.importtax.client.rmi.RmiConnection - Failed to connect to RMI registry at rmi://localhost:5000/
+java.rmi.ConnectException: Connection refused to host: localhost; nested exception is: 
+	java.net.ConnectException: Connection refused: connect
+	at java.rmi/sun.rmi.transport.tcp.TCPEndpoint.newSocket(TCPEndpoint.java:626)
+	at java.rmi/sun.rmi.transport.tcp.TCPChannel.createConnection(TCPChannel.java:217)
+	at java.rmi/sun.rmi.transport.tcp.TCPChannel.newConnection(TCPChannel.java:204)
+	at java.rmi/sun.rmi.server.UnicastRef.newCall(UnicastRef.java:344)
+	at java.rmi/sun.rmi.registry.RegistryImpl_Stub.list(RegistryImpl_Stub.java:90)
+	at com.importtax.client.rmi.RmiConnection.initialize(RmiConnection.java:43)
+	at com.importtax.client.ui.LoginFrame.initializeRmiService(LoginFrame.java:75)
+	at com.importtax.client.ui.LoginFrame.<init>(LoginFrame.java:63)
+	at com.importtax.client.ui.LoginFrame.<init>(LoginFrame.java:58)
+	at com.importtax.client.AppLauncher.initializeApplication(AppLauncher.java:43)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:771)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:722)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:716)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:741)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+Caused by: java.net.ConnectException: Connection refused: connect
+	at java.base/sun.nio.ch.Net.connect0(Native Method)
+	at java.base/sun.nio.ch.Net.connect(Net.java:579)
+	at java.base/sun.nio.ch.Net.connect(Net.java:568)
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593)
+	at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327)
+	at java.base/java.net.Socket.connect(Socket.java:633)
+	at java.base/java.net.Socket.connect(Socket.java:583)
+	at java.base/java.net.Socket.<init>(Socket.java:507)
+	at java.base/java.net.Socket.<init>(Socket.java:287)
+	at java.rmi/sun.rmi.transport.tcp.TCPDirectSocketFactory.createSocket(TCPDirectSocketFactory.java:40)
+	at java.rmi/sun.rmi.transport.tcp.TCPEndpoint.newSocket(TCPEndpoint.java:620)
+	... 22 common frames omitted
+2026-05-13 19:07:46.553 [AWT-EventQueue-0] WARN  com.importtax.client.ui.LoginFrame - UserService is unavailable for login
+java.rmi.ConnectException: Connection refused to host: localhost; nested exception is: 
+	java.net.ConnectException: Connection refused: connect
+	at java.rmi/sun.rmi.transport.tcp.TCPEndpoint.newSocket(TCPEndpoint.java:626)
+	at java.rmi/sun.rmi.transport.tcp.TCPChannel.createConnection(TCPChannel.java:217)
+	at java.rmi/sun.rmi.transport.tcp.TCPChannel.newConnection(TCPChannel.java:204)
+	at java.rmi/sun.rmi.server.UnicastRef.newCall(UnicastRef.java:344)
+	at java.rmi/sun.rmi.registry.RegistryImpl_Stub.list(RegistryImpl_Stub.java:90)
+	at com.importtax.client.rmi.RmiConnection.initialize(RmiConnection.java:43)
+	at com.importtax.client.ui.LoginFrame.initializeRmiService(LoginFrame.java:75)
+	at com.importtax.client.ui.LoginFrame.<init>(LoginFrame.java:63)
+	at com.importtax.client.ui.LoginFrame.<init>(LoginFrame.java:58)
+	at com.importtax.client.AppLauncher.initializeApplication(AppLauncher.java:43)
+	at java.desktop/java.awt.event.InvocationEvent.dispatch(InvocationEvent.java:318)
+	at java.desktop/java.awt.EventQueue.dispatchEventImpl(EventQueue.java:771)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:722)
+	at java.desktop/java.awt.EventQueue$4.run(EventQueue.java:716)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.base/java.security.ProtectionDomain$JavaSecurityAccessImpl.doIntersectionPrivilege(ProtectionDomain.java:86)
+	at java.desktop/java.awt.EventQueue.dispatchEvent(EventQueue.java:741)
+	at java.desktop/java.awt.EventDispatchThread.pumpOneEventForFilters(EventDispatchThread.java:203)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForFilter(EventDispatchThread.java:124)
+	at java.desktop/java.awt.EventDispatchThread.pumpEventsForHierarchy(EventDispatchThread.java:113)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:109)
+	at java.desktop/java.awt.EventDispatchThread.pumpEvents(EventDispatchThread.java:101)
+	at java.desktop/java.awt.EventDispatchThread.run(EventDispatchThread.java:90)
+Caused by: java.net.ConnectException: Connection refused: connect
+	at java.base/sun.nio.ch.Net.connect0(Native Method)
+	at java.base/sun.nio.ch.Net.connect(Net.java:579)
+	at java.base/sun.nio.ch.Net.connect(Net.java:568)
+	at java.base/sun.nio.ch.NioSocketImpl.connect(NioSocketImpl.java:593)
+	at java.base/java.net.SocksSocketImpl.connect(SocksSocketImpl.java:327)
+	at java.base/java.net.Socket.connect(Socket.java:633)
+	at java.base/java.net.Socket.connect(Socket.java:583)
+	at java.base/java.net.Socket.<init>(Socket.java:507)
+	at java.base/java.net.Socket.<init>(Socket.java:287)
+	at java.rmi/sun.rmi.transport.tcp.TCPDirectSocketFactory.createSocket(TCPDirectSocketFactory.java:40)
+	at java.rmi/sun.rmi.transport.tcp.TCPEndpoint.newSocket(TCPEndpoint.java:620)
+	... 22 common frames omitted
+2026-05-13 19:07:47.211 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Application launched successfully
+2026-05-13 19:09:25.802 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 19:09:25.805 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Starting Import Tax Management System Client
+2026-05-13 19:09:25.805 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 19:09:25.805 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Applying FlatLaf Dark theme
+2026-05-13 19:09:26.218 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Theme applied successfully
+2026-05-13 19:09:26.300 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Initializing LoginFrame
+2026-05-13 19:09:26.302 [AWT-EventQueue-0] INFO  c.importtax.client.rmi.RmiConnection - Connecting to RMI registry at: rmi://localhost:5000/
+2026-05-13 19:09:26.469 [AWT-EventQueue-0] INFO  c.importtax.client.rmi.RmiConnection - Successfully connected to RMI registry
+2026-05-13 19:09:26.469 [AWT-EventQueue-0] DEBUG c.importtax.client.rmi.RmiConnection - Looking up service: userService
+2026-05-13 19:09:27.661 [AWT-EventQueue-0] INFO  c.importtax.client.rmi.RmiConnection - Successfully looked up service: userService
+2026-05-13 19:09:27.662 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - UserService RMI connection established
+2026-05-13 19:09:28.508 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Application launched successfully
+2026-05-13 19:09:35.241 [AWT-EventQueue-0] WARN  com.importtax.client.ui.LoginFrame - Authentication failed: RemoteException occurred in server thread; nested exception is: 
+	java.rmi.RemoteException: UserService operation 'authenticateUser' failed.; nested exception is: 
+	java.lang.IllegalArgumentException: Invalid username or password
+2026-05-13 19:09:56.011 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Opening RegisterFrame from LoginFrame
+2026-05-13 19:09:56.177 [AWT-EventQueue-0] INFO  c.importtax.client.ui.RegisterFrame - Initializing RegisterFrame
+2026-05-13 19:09:56.178 [AWT-EventQueue-0] DEBUG c.importtax.client.rmi.RmiConnection - Looking up service: userService
+2026-05-13 19:09:56.181 [AWT-EventQueue-0] INFO  c.importtax.client.rmi.RmiConnection - Successfully looked up service: userService
+2026-05-13 19:09:56.181 [AWT-EventQueue-0] INFO  c.importtax.client.ui.RegisterFrame - UserService RMI connection established
+2026-05-13 19:10:57.098 [AWT-EventQueue-0] INFO  c.importtax.client.ui.RegisterFrame - Registration completed for userId=1, username=shema
+2026-05-13 19:10:59.443 [AWT-EventQueue-0] INFO  c.importtax.client.ui.RegisterFrame - Opening LoginFrame from RegisterFrame
+2026-05-13 19:10:59.632 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Initializing LoginFrame
+2026-05-13 19:10:59.635 [AWT-EventQueue-0] DEBUG c.importtax.client.rmi.RmiConnection - Looking up service: userService
+2026-05-13 19:10:59.644 [AWT-EventQueue-0] INFO  c.importtax.client.rmi.RmiConnection - Successfully looked up service: userService
+2026-05-13 19:10:59.645 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - UserService RMI connection established
+2026-05-13 19:11:10.348 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - User authenticated successfully: id=1, username=shema
+2026-05-13 19:11:10.475 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Initializing DashboardFrame for user: shema
+2026-05-13 19:11:21.523 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - User shema logging out
+2026-05-13 19:11:24.470 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Initializing LoginFrame
+2026-05-13 19:11:24.470 [AWT-EventQueue-0] DEBUG c.importtax.client.rmi.RmiConnection - Looking up service: userService
+2026-05-13 19:11:24.473 [AWT-EventQueue-0] INFO  c.importtax.client.rmi.RmiConnection - Successfully looked up service: userService
+2026-05-13 19:11:24.474 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - UserService RMI connection established
+2026-05-13 19:11:35.907 [AWT-EventQueue-0] WARN  com.importtax.client.ui.LoginFrame - Authentication failed: RemoteException occurred in server thread; nested exception is: 
+	java.rmi.RemoteException: UserService operation 'authenticateUser' failed.; nested exception is: 
+	java.lang.IllegalArgumentException: Invalid username or password
+2026-05-13 19:11:45.496 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - User authenticated successfully: id=1, username=shema
+2026-05-13 19:11:45.497 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Initializing DashboardFrame for user: shema
+2026-05-13 19:11:48.336 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Action clicked: New Import
+2026-05-13 19:11:48.829 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Action clicked: View Reports
+2026-05-13 19:11:49.392 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Action clicked: Process Payment
+2026-05-13 19:11:50.007 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Action clicked: User Management
+2026-05-13 19:11:51.217 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Users
+2026-05-13 19:11:51.679 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Import Items
+2026-05-13 19:11:52.148 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Taxes
+2026-05-13 19:11:52.611 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Invoices
+2026-05-13 19:11:53.050 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Payments
+2026-05-13 19:11:53.504 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Reports
+2026-05-13 19:11:54.097 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Notifications
+2026-05-13 19:11:54.699 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Settings
+2026-05-13 19:11:56.321 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - User shema logging out
+2026-05-13 19:11:58.006 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Initializing LoginFrame
+2026-05-13 19:11:58.308 [AWT-EventQueue-0] DEBUG c.importtax.client.rmi.RmiConnection - Looking up service: userService
+2026-05-13 19:11:58.314 [AWT-EventQueue-0] INFO  c.importtax.client.rmi.RmiConnection - Successfully looked up service: userService
+2026-05-13 19:11:58.314 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - UserService RMI connection established
+2026-05-13 19:47:01.267 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 19:47:01.270 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Starting Import Tax Management System Client
+2026-05-13 19:47:01.272 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - ===============================================
+2026-05-13 19:47:01.273 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Applying FlatLaf Dark theme
+2026-05-13 19:47:01.816 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Theme applied successfully
+2026-05-13 19:47:01.959 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Initializing LoginFrame
+2026-05-13 19:47:01.961 [AWT-EventQueue-0] INFO  c.importtax.client.rmi.RmiConnection - Connecting to RMI registry at: rmi://localhost:5000/
+2026-05-13 19:47:02.392 [AWT-EventQueue-0] INFO  c.importtax.client.rmi.RmiConnection - Successfully connected to RMI registry
+2026-05-13 19:47:02.393 [AWT-EventQueue-0] DEBUG c.importtax.client.rmi.RmiConnection - Looking up service: userService
+2026-05-13 19:47:02.540 [AWT-EventQueue-0] INFO  c.importtax.client.rmi.RmiConnection - Successfully looked up service: userService
+2026-05-13 19:47:02.541 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - UserService RMI connection established
+2026-05-13 19:47:03.250 [AWT-EventQueue-0] INFO  com.importtax.client.AppLauncher - Application launched successfully
+2026-05-13 19:47:20.756 [AWT-EventQueue-0] WARN  com.importtax.client.ui.LoginFrame - Authentication failed: RemoteException occurred in server thread; nested exception is: 
+	java.rmi.RemoteException: UserService operation 'authenticateUser' failed.; nested exception is: 
+	java.lang.IllegalArgumentException: Invalid username or password
+2026-05-13 19:47:30.865 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - User authenticated successfully: id=1, username=shema
+2026-05-13 19:47:30.873 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Initializing DashboardFrame for user: shema
+2026-05-13 19:47:36.025 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Opening ImportItemFrame for user: shema
+2026-05-13 19:47:36.241 [AWT-EventQueue-0] INFO  c.i.client.ui.ImportItemFrame - Initializing ImportItemFrame
+2026-05-13 19:47:36.242 [AWT-EventQueue-0] DEBUG c.importtax.client.rmi.RmiConnection - Looking up service: importItemService
+2026-05-13 19:47:36.255 [AWT-EventQueue-0] INFO  c.importtax.client.rmi.RmiConnection - Successfully looked up service: importItemService
+2026-05-13 19:47:36.256 [AWT-EventQueue-0] INFO  c.i.client.ui.ImportItemFrame - ImportItemService RMI connection established
+2026-05-13 19:47:39.783 [AWT-EventQueue-0] ERROR c.i.client.ui.ImportItemFrame - Could not load import items
+java.rmi.ServerException: RemoteException occurred in server thread; nested exception is: 
+	java.rmi.UnmarshalException: unrecognized method hash: method not supported by remote object
+	at java.rmi/sun.rmi.server.UnicastServerRef.dispatch(UnicastServerRef.java:392)
+	at java.rmi/sun.rmi.transport.Transport$1.run(Transport.java:200)
+	at java.rmi/sun.rmi.transport.Transport$1.run(Transport.java:197)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:712)
+	at java.rmi/sun.rmi.transport.Transport.serviceCall(Transport.java:196)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport.handleMessages(TCPTransport.java:587)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run0(TCPTransport.java:828)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.lambda$run$0(TCPTransport.java:705)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run(TCPTransport.java:704)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:842)
+	at java.rmi/sun.rmi.transport.StreamRemoteCall.exceptionReceivedFromServer(StreamRemoteCall.java:304)
+	at java.rmi/sun.rmi.transport.StreamRemoteCall.executeCall(StreamRemoteCall.java:280)
+	at java.rmi/sun.rmi.server.UnicastRef.invoke(UnicastRef.java:165)
+	at java.rmi/java.rmi.server.RemoteObjectInvocationHandler.invokeRemoteMethod(RemoteObjectInvocationHandler.java:215)
+	at java.rmi/java.rmi.server.RemoteObjectInvocationHandler.invoke(RemoteObjectInvocationHandler.java:160)
+	at jdk.proxy2/jdk.proxy2.$Proxy4.findItemsByUser(Unknown Source)
+	at com.importtax.client.ui.ImportItemFrame$3.doInBackground(ImportItemFrame.java:387)
+	at com.importtax.client.ui.ImportItemFrame$3.doInBackground(ImportItemFrame.java:383)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:304)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:343)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:842)
+Caused by: java.rmi.UnmarshalException: unrecognized method hash: method not supported by remote object
+	at java.rmi/sun.rmi.server.UnicastServerRef.dispatch(UnicastServerRef.java:325)
+	at java.rmi/sun.rmi.transport.Transport$1.run(Transport.java:200)
+	at java.rmi/sun.rmi.transport.Transport$1.run(Transport.java:197)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:712)
+	at java.rmi/sun.rmi.transport.Transport.serviceCall(Transport.java:196)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport.handleMessages(TCPTransport.java:587)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run0(TCPTransport.java:828)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.lambda$run$0(TCPTransport.java:705)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run(TCPTransport.java:704)
+	... 3 common frames omitted
+2026-05-13 19:47:46.016 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Initializing DashboardFrame for user: shema
+2026-05-13 19:47:48.140 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Action clicked: View Reports
+2026-05-13 19:47:50.519 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Action clicked: Process Payment
+2026-05-13 19:47:52.119 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Action clicked: User Management
+2026-05-13 19:47:54.005 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Users
+2026-05-13 19:47:56.508 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Navigation: Dashboard
+2026-05-13 19:47:59.861 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Opening ImportItemFrame for user: shema
+2026-05-13 19:47:59.863 [AWT-EventQueue-0] INFO  c.i.client.ui.ImportItemFrame - Initializing ImportItemFrame
+2026-05-13 19:47:59.863 [AWT-EventQueue-0] DEBUG c.importtax.client.rmi.RmiConnection - Looking up service: importItemService
+2026-05-13 19:47:59.865 [AWT-EventQueue-0] INFO  c.importtax.client.rmi.RmiConnection - Successfully looked up service: importItemService
+2026-05-13 19:47:59.866 [AWT-EventQueue-0] INFO  c.i.client.ui.ImportItemFrame - ImportItemService RMI connection established
+2026-05-13 19:48:08.182 [AWT-EventQueue-0] ERROR c.i.client.ui.ImportItemFrame - Could not load import items
+java.rmi.ServerException: RemoteException occurred in server thread; nested exception is: 
+	java.rmi.UnmarshalException: unrecognized method hash: method not supported by remote object
+	at java.rmi/sun.rmi.server.UnicastServerRef.dispatch(UnicastServerRef.java:392)
+	at java.rmi/sun.rmi.transport.Transport$1.run(Transport.java:200)
+	at java.rmi/sun.rmi.transport.Transport$1.run(Transport.java:197)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:712)
+	at java.rmi/sun.rmi.transport.Transport.serviceCall(Transport.java:196)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport.handleMessages(TCPTransport.java:587)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run0(TCPTransport.java:828)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.lambda$run$0(TCPTransport.java:705)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run(TCPTransport.java:704)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:842)
+	at java.rmi/sun.rmi.transport.StreamRemoteCall.exceptionReceivedFromServer(StreamRemoteCall.java:304)
+	at java.rmi/sun.rmi.transport.StreamRemoteCall.executeCall(StreamRemoteCall.java:280)
+	at java.rmi/sun.rmi.server.UnicastRef.invoke(UnicastRef.java:165)
+	at java.rmi/java.rmi.server.RemoteObjectInvocationHandler.invokeRemoteMethod(RemoteObjectInvocationHandler.java:215)
+	at java.rmi/java.rmi.server.RemoteObjectInvocationHandler.invoke(RemoteObjectInvocationHandler.java:160)
+	at jdk.proxy2/jdk.proxy2.$Proxy4.findItemsByUser(Unknown Source)
+	at com.importtax.client.ui.ImportItemFrame$3.doInBackground(ImportItemFrame.java:387)
+	at com.importtax.client.ui.ImportItemFrame$3.doInBackground(ImportItemFrame.java:383)
+	at java.desktop/javax.swing.SwingWorker$1.call(SwingWorker.java:304)
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)
+	at java.desktop/javax.swing.SwingWorker.run(SwingWorker.java:343)
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1136)
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:635)
+	at java.base/java.lang.Thread.run(Thread.java:842)
+Caused by: java.rmi.UnmarshalException: unrecognized method hash: method not supported by remote object
+	at java.rmi/sun.rmi.server.UnicastServerRef.dispatch(UnicastServerRef.java:325)
+	at java.rmi/sun.rmi.transport.Transport$1.run(Transport.java:200)
+	at java.rmi/sun.rmi.transport.Transport$1.run(Transport.java:197)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:712)
+	at java.rmi/sun.rmi.transport.Transport.serviceCall(Transport.java:196)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport.handleMessages(TCPTransport.java:587)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run0(TCPTransport.java:828)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.lambda$run$0(TCPTransport.java:705)
+	at java.base/java.security.AccessController.doPrivileged(AccessController.java:399)
+	at java.rmi/sun.rmi.transport.tcp.TCPTransport$ConnectionHandler.run(TCPTransport.java:704)
+	... 3 common frames omitted
+2026-05-13 19:49:29.524 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - Initializing DashboardFrame for user: shema
+2026-05-13 19:49:32.488 [AWT-EventQueue-0] INFO  c.importtax.client.ui.DashboardFrame - User shema logging out
+2026-05-13 19:49:34.249 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - Initializing LoginFrame
+2026-05-13 19:49:34.250 [AWT-EventQueue-0] DEBUG c.importtax.client.rmi.RmiConnection - Looking up service: userService
+2026-05-13 19:49:34.259 [AWT-EventQueue-0] INFO  c.importtax.client.rmi.RmiConnection - Successfully looked up service: userService
+2026-05-13 19:49:34.259 [AWT-EventQueue-0] INFO  com.importtax.client.ui.LoginFrame - UserService RMI connection established
