@@ -1,6 +1,7 @@
 package com.importtax.server.server;
 
 import com.importtax.server.config.ServerConfig;
+import com.importtax.server.util.DatabaseSeeder;
 import com.importtax.server.rmi.impl.ImportItemServiceImpl;
 import com.importtax.server.rmi.impl.InvoiceServiceImpl;
 import com.importtax.server.rmi.impl.NotificationServiceImpl;
@@ -31,6 +32,7 @@ public final class ServerLauncher {
         LOGGER.info("Starting {} RMI server.", ServerConfig.APPLICATION_NAME);
 
         try {
+            DatabaseSeeder.seedIfNeeded();
             startRegistry();
             bindServices();
             registerShutdownHook();

@@ -1,7 +1,7 @@
 package com.importtax.client;
 
 import com.formdev.flatlaf.FlatDarkLaf;
-import com.importtax.client.ui.LoginFrame;
+import com.importtax.client.ui.AuthFrame;
 import javax.swing.SwingUtilities;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,9 +39,9 @@ public class AppLauncher {
             // Apply FlatLaf Dark theme
             applyTheme();
 
-            // Launch Login Frame
-            LoginFrame loginFrame = new LoginFrame();
-            loginFrame.setVisible(true);
+            // Launch Auth Frame
+            AuthFrame authFrame = new AuthFrame();
+            authFrame.setVisible(true);
 
             logger.info("Application launched successfully");
 

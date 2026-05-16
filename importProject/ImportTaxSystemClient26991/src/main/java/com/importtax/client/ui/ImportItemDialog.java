@@ -103,8 +103,9 @@ public class ImportItemDialog extends JDialog {
         root.setBackground(UIConstants.BACKGROUND_COLOR);
         root.setBorder(new EmptyBorder(18, 18, 18, 18));
 
-        JPanel header = new JPanel(new MigLayout("insets 0", "[grow]", "[][]"));
+        JPanel header = new JPanel(new MigLayout("insets 20 24 12 24", "[grow]", "[][]"));
         header.setOpaque(false);
+        header.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, UIConstants.BORDER_COLOR));
         JLabel title = new JLabel(editingItem == null ? "Add New Import" : "Edit Import Item");
         title.setFont(new Font("Segoe UI", Font.BOLD, 22));
         title.setForeground(UIConstants.TEXT_COLOR);
@@ -164,8 +165,9 @@ public class ImportItemDialog extends JDialog {
         formScroll.getVerticalScrollBar().setUnitIncrement(18);
         root.add(formScroll, BorderLayout.CENTER);
 
-        JPanel buttons = new JPanel(new MigLayout("insets 16 0 0 0, fillx", "[grow][110!][110!][110!]", "[]"));
+        JPanel buttons = new JPanel(new MigLayout("insets 12 24 20 24, fillx", "[grow][110!][110!][110!]", "[]"));
         buttons.setOpaque(false);
+        buttons.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, UIConstants.BORDER_COLOR));
         resetButton = createActionButton("Reset", UIConstants.PRIMARY_DARK);
         resetButton.addActionListener(e -> populateForm(editingItem));
         cancelButton = createActionButton("Cancel", UIConstants.BORDER_COLOR);
@@ -187,10 +189,10 @@ public class ImportItemDialog extends JDialog {
 
     private void addField(JPanel panel, String labelText, java.awt.Component component, String constraints) {
         JLabel label = new JLabel(labelText);
-        label.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        label.setForeground(UIConstants.TEXT_COLOR);
+        label.setFont(UIConstants.FONT_LABEL);
+        label.setForeground(UIConstants.TEXT_SECONDARY);
         panel.add(label, "aligny top, gapy 8 0");
-        panel.add(component, constraints + ", wrap, gapbottom 8");
+        panel.add(component, constraints + ", wrap, gapbottom 4");
     }
 
     private JTextField createTextField() {
@@ -198,10 +200,22 @@ public class ImportItemDialog extends JDialog {
         field.setFont(UIConstants.FONT_REGULAR);
         field.setBackground(UIConstants.PANEL_COLOR);
         field.setForeground(UIConstants.TEXT_COLOR);
-        field.setCaretColor(UIConstants.TEXT_COLOR);
+        field.setCaretColor(UIConstants.PRIMARY_COLOR);
         field.setBorder(BorderFactory.createCompoundBorder(
                 new LineBorder(UIConstants.BORDER_COLOR, 1, true),
-                new EmptyBorder(8, 10, 8, 10)));
+                new EmptyBorder(8, 12, 8, 12)));
+        field.addFocusListener(new java.awt.event.FocusAdapter() {
+            public void focusGained(java.awt.event.FocusEvent e) {
+                field.setBorder(BorderFactory.createCompoundBorder(
+                    new LineBorder(UIConstants.PRIMARY_COLOR, 2, true),
+                    new EmptyBorder(7, 11, 7, 11)));
+            }
+            public void focusLost(java.awt.event.FocusEvent e) {
+                field.setBorder(BorderFactory.createCompoundBorder(
+                    new LineBorder(UIConstants.BORDER_COLOR, 1, true),
+                    new EmptyBorder(8, 12, 8, 12)));
+            }
+        });
         return field;
     }
 
@@ -212,8 +226,8 @@ public class ImportItemDialog extends JDialog {
         area.setFont(UIConstants.FONT_REGULAR);
         area.setBackground(UIConstants.PANEL_COLOR);
         area.setForeground(UIConstants.TEXT_COLOR);
-        area.setCaretColor(UIConstants.TEXT_COLOR);
-        area.setBorder(new EmptyBorder(8, 10, 8, 10));
+        area.setCaretColor(UIConstants.PRIMARY_COLOR);
+        area.setBorder(new EmptyBorder(8, 12, 8, 12));
         return area;
     }
 

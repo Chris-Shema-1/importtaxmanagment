@@ -10,12 +10,13 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
         <flatlaf.version>3.4.1</flatlaf.version>
         <miglayout.version>11.3</miglayout.version>
         <slf4j.version>2.0.13</slf4j.version>
         <logback.version>1.5.6</logback.version>
+        <jfreechart.version>1.5.4</jfreechart.version>
     </properties>
 
     <dependencies>
@@ -61,6 +62,13 @@
             <version>${logback.version}</version>
         </dependency>
 
+        <!-- JFreeChart for Reports -->
+        <dependency>
+            <groupId>org.jfree</groupId>
+            <artifactId>jfreechart</artifactId>
+            <version>${jfreechart.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -71,9 +79,9 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.12.1</version>
                 <configuration>
-                    <source>17</source>
-                    <target>17</target>
-                    <release>17</release>
+                    <source>21</source>
+                    <target>21</target>
+                    <release>21</release>
                 </configuration>
             </plugin>
 
@@ -88,6 +96,16 @@
                             <mainClass>com.importtax.client.AppLauncher</mainClass>
                         </manifest>
                     </archive>
+                </configuration>
+            </plugin>
+
+            <!-- Exec Plugin -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <mainClass>com.importtax.client.AppLauncher</mainClass>
                 </configuration>
             </plugin>
 

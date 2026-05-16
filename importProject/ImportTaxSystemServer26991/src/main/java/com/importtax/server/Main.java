@@ -1,6 +1,7 @@
 package com.importtax.server;
 
 import com.importtax.server.util.HibernateUtil;
+import com.importtax.server.util.DatabaseSeeder;
 import org.hibernate.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +16,7 @@ public class Main {
         try (Session session = HibernateUtil.getSessionFactory().openSession()) {
             session.createNativeQuery("SELECT 1", Integer.class).getSingleResult();
             LOGGER.info("Hibernate database connection tested successfully.");
+            DatabaseSeeder.seedIfNeeded();
         } catch (Exception exception) {
             LOGGER.error("Hibernate database connection test failed.", exception);
         } finally {
