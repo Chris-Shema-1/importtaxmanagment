@@ -4,7 +4,9 @@ import com.importtax.client.rmi.RmiConnection;
 import com.importtax.client.util.RoundedButton;
 import com.importtax.client.util.CurrentSession;
 import com.importtax.client.util.UIConstants;
+import com.importtax.server.model.Notification;
 import com.importtax.server.model.User;
+import com.importtax.server.rmi.NotificationService;
 import com.importtax.server.rmi.UserService;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -22,6 +24,7 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.swing.AbstractAction;
 import javax.swing.ActionMap;
 import javax.swing.BorderFactory;
@@ -54,6 +57,7 @@ public class LoginFrame extends JFrame {
     private JLabel statusLabel;
     private JLabel dateTimeLabel;
     private UserService userService;
+    private NotificationService notificationService;
 
     public LoginFrame() {
         this(null);
@@ -75,10 +79,16 @@ public class LoginFrame extends JFrame {
         try {
             RmiConnection.initialize();
             userService = RmiConnection.lookup(UIConstants.RMI_SERVICE_USER);
+            try {
+                notificationService = RmiConnection.lookup(UIConstants.RMI_SERVICE_NOTIFICATION);
+            } catch (RemoteException | NotBoundException ignored) {
+                notificationService = null;
+            }
             logger.info("UserService RMI connection established");
         } catch (RemoteException | NotBoundException e) {
             logger.warn("UserService is unavailable for login", e);
             userService = null;
+            notificationService = null;
         }
     }
 
@@ -312,6 +322,10 @@ public class LoginFrame extends JFrame {
                         showAuthenticationError();
                         return;
                     }
+                    if (!verifyOtp(authenticatedUser)) {
+                        showError("OTP verification failed");
+                        return;
+                    }
                     logger.info("User authenticated successfully: id={}, username={}",
                             authenticatedUser.getUserId(), authenticatedUser.getUsername());
                     CurrentSession.setLoggedInUser(authenticatedUser);
@@ -352,6 +366,41 @@ public class LoginFrame extends JFrame {
         showError("Invalid username or password");
         passwordField.selectAll();
         passwordField.requestFocus();
+    }
+
+    private boolean verifyOtp(User authenticatedUser) {
+        String otp = String.format("%06d", ThreadLocalRandom.current().nextInt(0, 1_000_000));
+        persistNotification("OTP", authenticatedUser.getUsername(),
+                "Simulated OTP generated for login: " + otp, "SENT");
+
+        JOptionPane.showMessageDialog(this,
+                "OTP simulation for " + authenticatedUser.getUsername() + ": " + otp
+                        + "\nEnter this code in the next prompt to complete sign-in.",
+                "OTP Verification", JOptionPane.INFORMATION_MESSAGE);
+
+        String input = JOptionPane.showInputDialog(this,
+                "Enter the 6-digit OTP code:", "OTP Verification", JOptionPane.QUESTION_MESSAGE);
+        boolean verified = otp.equals(input == null ? "" : input.trim());
+        persistNotification("OTP", authenticatedUser.getUsername(),
+                verified ? "OTP validated successfully" : "OTP validation failed", verified ? "SENT" : "FAILED");
+        return verified;
+    }
+
+    private void persistNotification(String type, String recipient, String message, String status) {
+        if (notificationService == null) {
+            return;
+        }
+        try {
+            Notification notification = new Notification();
+            notification.setNotificationType(type);
+            notification.setRecipient(recipient);
+            notification.setMessage(message);
+            notification.setStatus(status);
+            notification.setSentAt(java.time.LocalDate.now());
+            notificationService.save(notification);
+        } catch (Exception ex) {
+            logger.debug("Could not persist login notification", ex);
+        }
     }
 
     private Throwable findCause(Throwable throwable, Class<? extends Throwable> type) {

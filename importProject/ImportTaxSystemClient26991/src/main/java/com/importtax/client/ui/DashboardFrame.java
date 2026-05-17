@@ -1,509 +1,520 @@
 package com.importtax.client.ui;
 
+import com.importtax.client.rmi.RmiConnection;
+import com.importtax.client.util.CurrentSession;
 import com.importtax.client.util.RoundedButton;
 import com.importtax.client.util.RoundedPanel;
-import com.importtax.client.util.CurrentSession;
 import com.importtax.client.util.UIConstants;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GridLayout;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import com.importtax.server.model.ImportItem;
+import com.importtax.server.model.Invoice;
+import com.importtax.server.model.Notification;
+import com.importtax.server.model.Payment;
+import com.importtax.server.model.Tax;
+import com.importtax.server.model.User;
+import com.importtax.server.rmi.ImportItemService;
+import com.importtax.server.rmi.InvoiceService;
+import com.importtax.server.rmi.NotificationService;
+import com.importtax.server.rmi.PaymentService;
+import com.importtax.server.rmi.TaxService;
+import com.importtax.server.rmi.UserService;
+import net.miginfocom.swing.MigLayout;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.swing.Box;
 import javax.swing.BoxLayout;
-import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
-import net.miginfocom.swing.MigLayout;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Cursor;
+import java.awt.Dimension;
+import java.awt.Font;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
 
-/**
- * DashboardFrame - Modern professional dashboard interface for the Import Tax Management System.
- * Displays system overview, navigation menu, statistic cards, and quick-access features.
- *
- * @author Import Tax System Development Team
- * @version 1.0.0
- */
 public class DashboardFrame extends JFrame {
 
-    private static final long serialVersionUID = 1L;
     private static final Logger logger = LoggerFactory.getLogger(DashboardFrame.class);
 
     private final String username;
-    private JPanel sidebarPanel;
-    private JPanel contentPanel;
-    private JLabel userGreetingLabel;
+    private JLabel greetingLabel;
     private JLabel dateTimeLabel;
-    private String activeMenuitem = "Dashboard";
+    private JLabel statusLabel;
+    private JLabel importsMetric;
+    private JLabel taxMetric;
+    private JLabel paymentsMetric;
+    private JLabel usersMetric;
+    private JPanel activityPanel;
 
-    /**
-     * Constructor - Creates and initializes the DashboardFrame.
-     *
-     * @param username The logged-in username
-     */
+    private UserService userService;
+    private ImportItemService importItemService;
+    private TaxService taxService;
+    private InvoiceService invoiceService;
+    private PaymentService paymentService;
+    private NotificationService notificationService;
+
     public DashboardFrame(String username) {
-        this.username = username != null ? username : "Administrator";
+        this.username = username != null ? username : "Operator";
         logger.info("Initializing DashboardFrame for user: {}", this.username);
+        initializeServices();
         initializeFrame();
-        setupLayout();
+        setContentPane(createContent());
         startClockUpdate();
+        loadOverview();
     }
 
-    /**
-     * Initializes the JFrame properties.
-     */
+    private void initializeServices() {
+        try {
+            RmiConnection.initialize();
+            userService = RmiConnection.lookup(UIConstants.RMI_SERVICE_USER);
+            importItemService = RmiConnection.lookup(UIConstants.RMI_SERVICE_IMPORT);
+            taxService = RmiConnection.lookup(UIConstants.RMI_SERVICE_TAX);
+            invoiceService = RmiConnection.lookup(UIConstants.RMI_SERVICE_INVOICE);
+            paymentService = RmiConnection.lookup(UIConstants.RMI_SERVICE_PAYMENT);
+            notificationService = RmiConnection.lookup(UIConstants.RMI_SERVICE_NOTIFICATION);
+        } catch (Exception ex) {
+            logger.warn("Some dashboard services are unavailable", ex);
+        }
+    }
+
     private void initializeFrame() {
         setTitle(UIConstants.APP_TITLE + " - Dashboard");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1500, 900);
+        setSize(1500, 920);
+        setMinimumSize(new Dimension(1280, 760));
         setLocationRelativeTo(null);
         setBackground(UIConstants.BACKGROUND_COLOR);
     }
 
-    /**
-     * Sets up the main layout with sidebar, header, and content area.
-     */
-    private void setupLayout() {
-        JPanel mainPanel = new JPanel(new BorderLayout());
-        mainPanel.setBackground(UIConstants.BACKGROUND_COLOR);
+    private JPanel createContent() {
+        JPanel root = new JPanel(new BorderLayout());
+        root.setBackground(UIConstants.BACKGROUND_COLOR);
+        root.add(createSidebar(), BorderLayout.WEST);
 
-        // Create sidebar
-        sidebarPanel = createSidebar();
-        mainPanel.add(sidebarPanel, BorderLayout.WEST);
+        JPanel main = new JPanel(new BorderLayout());
+        main.setOpaque(false);
+        main.add(createHeader(), BorderLayout.NORTH);
 
-        // Create content area with header and dashboard
-        JPanel contentAreaPanel = new JPanel(new BorderLayout());
-        contentAreaPanel.setBackground(UIConstants.BACKGROUND_COLOR);
+        JPanel body = new JPanel(new MigLayout("insets 28, fillx, wrap 1", "[grow]", ""));
+        body.setOpaque(false);
+        body.add(createHeroPanel(), "growx");
+        body.add(createMetricsPanel(), "growx");
+        body.add(createActionStrip(), "growx");
+        body.add(createActivityPanel(), "grow");
 
-        // Create header
-        JPanel headerPanel = createHeader();
-        contentAreaPanel.add(headerPanel, BorderLayout.NORTH);
-
-        // Create main content
-        contentPanel = createContentPanel();
-        JScrollPane scrollPane = new JScrollPane(contentPanel);
-        scrollPane.setBackground(UIConstants.BACKGROUND_COLOR);
-        scrollPane.getViewport().setBackground(UIConstants.BACKGROUND_COLOR);
+        JScrollPane scrollPane = new JScrollPane(body);
         scrollPane.setBorder(null);
-        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
-        contentAreaPanel.add(scrollPane, BorderLayout.CENTER);
-
-        mainPanel.add(contentAreaPanel, BorderLayout.CENTER);
-
-        setContentPane(mainPanel);
+        scrollPane.getViewport().setBackground(UIConstants.BACKGROUND_COLOR);
+        scrollPane.setBackground(UIConstants.BACKGROUND_COLOR);
+        main.add(scrollPane, BorderLayout.CENTER);
+        root.add(main, BorderLayout.CENTER);
+        return root;
     }
 
-    /**
-     * Creates a modern sidebar navigation panel.
-     *
-     * @return The configured sidebar panel
-     */
     private JPanel createSidebar() {
-        RoundedPanel sidebar = new RoundedPanel(0, 0, new Color(35, 35, 45));
-        sidebar.setPreferredSize(new Dimension(280, 0));
+        RoundedPanel sidebar = new RoundedPanel(0, 0, new Color(13, 20, 28));
+        sidebar.setPreferredSize(new Dimension(290, 0));
         sidebar.setLayout(new BoxLayout(sidebar, BoxLayout.Y_AXIS));
-        sidebar.setBorder(new EmptyBorder(20, 0, 20, 0));
+        sidebar.setBorder(new EmptyBorder(24, 18, 24, 18));
 
-        // Logo section
-        JLabel logoLabel = new JLabel("📋 IMPORT TAX");
-        logoLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
-        logoLabel.setForeground(UIConstants.PRIMARY_COLOR);
-        logoLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        logoLabel.setBorder(new EmptyBorder(0, 20, 10, 20));
-        sidebar.add(logoLabel);
+        JLabel logo = new JLabel("Import Tax Hub");
+        logo.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        logo.setForeground(UIConstants.TEXT_COLOR);
+        logo.setAlignmentX(Component.LEFT_ALIGNMENT);
+        sidebar.add(logo);
 
-        JLabel sloganLabel = new JLabel("Management System");
-        sloganLabel.setFont(new Font("Segoe UI", Font.PLAIN, 10));
-        sloganLabel.setForeground(UIConstants.TEXT_SECONDARY);
-        sloganLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
-        sloganLabel.setBorder(new EmptyBorder(0, 20, 20, 20));
-        sidebar.add(sloganLabel);
+        JLabel subtitle = new JLabel("Distributed finance operations");
+        subtitle.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        subtitle.setForeground(UIConstants.TEXT_SECONDARY);
+        subtitle.setBorder(new EmptyBorder(6, 0, 20, 0));
+        subtitle.setAlignmentX(Component.LEFT_ALIGNMENT);
+        sidebar.add(subtitle);
 
-        // Separator
-        JPanel separator = new JPanel();
-        separator.setBackground(UIConstants.BORDER_COLOR);
-        separator.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
-        separator.setAlignmentX(Component.LEFT_ALIGNMENT);
-        sidebar.add(separator);
-        sidebar.add(Box.createVerticalStrut(10));
-
-        // Navigation menu items
-        String[][] navItems = {
-            {"📊", "Dashboard"},
-            {"👥", "Users"},
-            {"📦", "Import Items"},
-            {"💰", "Taxes"},
-            {"🧾", "Invoices"},
-            {"💳", "Payments"},
-            {"📈", "Reports"},
-            {"🔔", "Notifications"},
-            {"⚙️", "Settings"}
+        String[][] items = {
+                {"Overview", "Live summary of the platform", "overview"},
+                {"Users", "Review registered operators", "users"},
+                {"Import Items", "Manage imported goods", "imports"},
+                {"Taxes", "Maintain tax profiles", "taxes"},
+                {"Invoices", "Issue and review invoices", "invoices"},
+                {"Payments", "Record invoice payments", "payments"},
+                {"Reports", "Export operational reports", "reports"},
+                {"Notifications", "OTP and workflow messages", "notifications"}
         };
 
-        for (String[] item : navItems) {
-            JPanel navItemPanel = createNavMenuItem(item[0], item[1]);
-            navItemPanel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 48));
-            sidebar.add(navItemPanel);
-            sidebar.add(Box.createVerticalStrut(5));
+        for (String[] item : items) {
+            sidebar.add(navButton(item[0], item[1], item[2]));
+            sidebar.add(Box.createVerticalStrut(10));
         }
 
-        // Add vertical spacer
         sidebar.add(Box.createVerticalGlue());
 
-        // Separator before logout
-        JPanel separator2 = new JPanel();
-        separator2.setBackground(UIConstants.BORDER_COLOR);
-        separator2.setMaximumSize(new Dimension(Integer.MAX_VALUE, 1));
-        separator2.setAlignmentX(Component.LEFT_ALIGNMENT);
-        sidebar.add(separator2);
-        sidebar.add(Box.createVerticalStrut(10));
-
-        // Logout button
-        RoundedButton logoutButton = createSidebarLogoutButton();
-        logoutButton.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
-        logoutButton.setAlignmentX(Component.LEFT_ALIGNMENT);
-        sidebar.add(logoutButton);
+        RoundedButton logout = new RoundedButton("Logout");
+        logout.setAlignmentX(Component.LEFT_ALIGNMENT);
+        logout.setStateColors(UIConstants.ERROR_COLOR,
+                UIConstants.ERROR_COLOR.brighter(), UIConstants.ERROR_COLOR.darker());
+        logout.addActionListener(e -> logout());
+        sidebar.add(logout);
 
         return sidebar;
     }
 
-    /**
-     * Creates a navigation menu item with hover effects.
-     *
-     * @param icon The icon emoji
-     * @param label The menu label
-     * @return The configured menu item panel
-     */
-    private JPanel createNavMenuItem(String icon, String label) {
-        JPanel itemPanel = new JPanel() {
+    private RoundedPanel navButton(String title, String subtitle, String action) {
+        RoundedPanel panel = new RoundedPanel(10, 10, new Color(24, 33, 42));
+        panel.setLayout(new MigLayout("insets 14, fillx", "[grow]", "[][]"));
+        panel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 13));
+        titleLabel.setForeground(UIConstants.TEXT_COLOR);
+        panel.add(titleLabel, "wrap");
+
+        JLabel subtitleLabel = new JLabel(subtitle);
+        subtitleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        subtitleLabel.setForeground(UIConstants.TEXT_SECONDARY);
+        panel.add(subtitleLabel);
+
+        panel.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override
-            protected void paintComponent(java.awt.Graphics g) {
-                super.paintComponent(g);
-                if (label.equals(activeMenuitem)) {
-                    g.setColor(UIConstants.PRIMARY_COLOR);
-                    g.fillRect(0, 0, getWidth(), getHeight());
-                }
-            }
-        };
-        itemPanel.setBackground(new Color(35, 35, 45));
-        itemPanel.setLayout(new MigLayout("insets 8 15 8 15, fillx", "[12][grow]", ""));
-        itemPanel.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        itemPanel.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-        JLabel iconLabel = new JLabel(icon);
-        iconLabel.setFont(new Font("Segoe UI", Font.PLAIN, 16));
-        itemPanel.add(iconLabel);
-
-        JLabel textLabel = new JLabel(label);
-        textLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        textLabel.setForeground(label.equals(activeMenuitem) ? Color.WHITE : UIConstants.TEXT_COLOR);
-        itemPanel.add(textLabel, "grow");
-
-        // Hover effect
-        itemPanel.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                itemPanel.setBackground(new Color(50, 50, 60));
-                itemPanel.repaint();
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                openModule(action);
             }
 
             @Override
-            public void mouseExited(MouseEvent e) {
-                if (!label.equals(activeMenuitem)) {
-                    itemPanel.setBackground(new Color(35, 35, 45));
-                }
-                itemPanel.repaint();
+            public void mouseEntered(java.awt.event.MouseEvent e) {
+                panel.setBackground(new Color(31, 44, 56));
             }
 
             @Override
-            public void mouseClicked(MouseEvent e) {
-                activeMenuitem = label;
-                handleNavigation(label);
-                sidebarPanel.repaint();
+            public void mouseExited(java.awt.event.MouseEvent e) {
+                panel.setBackground(new Color(24, 33, 42));
             }
         });
-
-        return itemPanel;
-    }
-
-    /**
-     * Creates the logout button for the sidebar.
-     *
-     * @return The configured logout button
-     */
-    private RoundedButton createSidebarLogoutButton() {
-        RoundedButton logoutButton = new RoundedButton("🚪 LOGOUT");
-        logoutButton.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        logoutButton.setStateColors(new Color(220, 53, 69),
-                new Color(240, 70, 85), new Color(200, 40, 55));
-        logoutButton.addActionListener(e -> handleLogout());
-        return logoutButton;
-    }
-
-    /**
-     * Creates the professional header panel with user info and notifications.
-     *
-     * @return The configured header panel
-     */
-    private JPanel createHeader() {
-        RoundedPanel headerPanel = new RoundedPanel(0, 0, new Color(45, 45, 55));
-        headerPanel.setPreferredSize(new Dimension(0, 75));
-        headerPanel.setLayout(new MigLayout("insets 15 25 15 25, fillx", "[grow][200]", ""));
-
-        // Left section - Welcome message and user info
-        JPanel leftSection = new JPanel();
-        leftSection.setBackground(new Color(45, 45, 55));
-        leftSection.setLayout(new MigLayout("", "[grow]", ""));
-
-        userGreetingLabel = new JLabel("Welcome back, " + username + "! 👋");
-        userGreetingLabel.setFont(new Font("Segoe UI", Font.BOLD, 18));
-        userGreetingLabel.setForeground(UIConstants.TEXT_COLOR);
-        leftSection.add(userGreetingLabel, "wrap");
-
-        dateTimeLabel = new JLabel("");
-        dateTimeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        dateTimeLabel.setForeground(UIConstants.TEXT_SECONDARY);
-        leftSection.add(dateTimeLabel);
-
-        headerPanel.add(leftSection, "grow");
-
-        // Right section - Notification and profile
-        JPanel rightSection = new JPanel();
-        rightSection.setBackground(new Color(45, 45, 55));
-        rightSection.setLayout(new MigLayout("", "[center][center]", ""));
-
-        JLabel notificationLabel = new JLabel("🔔");
-        notificationLabel.setFont(new Font("Segoe UI", Font.PLAIN, 24));
-        notificationLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        rightSection.add(notificationLabel, "gap 0 15 0 0");
-
-        JLabel profileLabel = new JLabel("👤");
-        profileLabel.setFont(new Font("Segoe UI", Font.PLAIN, 24));
-        profileLabel.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
-        rightSection.add(profileLabel);
-
-        headerPanel.add(rightSection);
-
-        return headerPanel;
-    }
-
-    /**
-     * Creates the main content panel with dashboard cards and overview.
-     *
-     * @return The configured content panel
-     */
-    private JPanel createContentPanel() {
-        JPanel panel = new JPanel();
-        panel.setBackground(UIConstants.BACKGROUND_COLOR);
-        panel.setLayout(new MigLayout("insets 30 30 30 30, fillx", "[grow]", ""));
-
-        // Dashboard title
-        JLabel dashboardTitle = new JLabel("Dashboard Overview");
-        dashboardTitle.setFont(new Font("Segoe UI", Font.BOLD, 26));
-        dashboardTitle.setForeground(UIConstants.TEXT_COLOR);
-        panel.add(dashboardTitle, "wrap, gap 0 0 25 0");
-
-        // Statistic cards
-        JPanel cardsPanel = createStatisticCards();
-        panel.add(cardsPanel, "grow, wrap, gap 0 0 35 0");
-
-        // Quick actions section
-        JLabel quickActionsTitle = new JLabel("Quick Actions");
-        quickActionsTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        quickActionsTitle.setForeground(UIConstants.TEXT_COLOR);
-        panel.add(quickActionsTitle, "wrap, gap 0 0 15 0");
-
-        JPanel quickActionsPanel = createQuickActionsPanel();
-        panel.add(quickActionsPanel, "grow, wrap, gap 0 0 35 0");
-
-        // Recent activity section
-        JLabel recentActivityTitle = new JLabel("Recent Activity");
-        recentActivityTitle.setFont(new Font("Segoe UI", Font.BOLD, 16));
-        recentActivityTitle.setForeground(UIConstants.TEXT_COLOR);
-        panel.add(recentActivityTitle, "wrap, gap 0 0 15 0");
-
-        JPanel activityPanel = createRecentActivityPanel();
-        panel.add(activityPanel, "grow, wrap");
-
         return panel;
     }
 
-    /**
-     * Creates statistic cards with modern styling.
-     *
-     * @return The cards panel
-     */
-    private JPanel createStatisticCards() {
-        JPanel cardsPanel = new JPanel(new GridLayout(1, 4, 20, 0));
-        cardsPanel.setBackground(UIConstants.BACKGROUND_COLOR);
+    private JPanel createHeader() {
+        RoundedPanel header = new RoundedPanel(0, 0, new Color(20, 30, 39));
+        header.setPreferredSize(new Dimension(0, 90));
+        header.setLayout(new MigLayout("insets 18 28, fillx", "[grow][pref]", ""));
 
-        // Card data: title, value, icon, hex color
-        String[][] cardData = {
-            {"Total Imports", "1,234", "📦", "0078D7"},
-            {"Pending Taxes", "$56,789", "💰", "FFC107"},
-            {"Paid Taxes", "$128,450", "✓", "22B14C"},
-            {"Total Revenue", "$185,239", "📊", "17A2B8"}
-        };
+        JPanel left = new JPanel(new MigLayout("insets 0", "[grow]", "[][]"));
+        left.setOpaque(false);
+        greetingLabel = new JLabel("Welcome back, " + username);
+        greetingLabel.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        greetingLabel.setForeground(UIConstants.TEXT_COLOR);
+        left.add(greetingLabel, "wrap");
 
-        for (String[] data : cardData) {
-            int colorValue = Integer.parseInt(data[3], 16);
-            Color accentColor = new Color(colorValue);
-            JPanel card = createStatisticCard(data[0], data[1], data[2], accentColor);
-            cardsPanel.add(card);
-        }
+        dateTimeLabel = new JLabel(" ");
+        dateTimeLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        dateTimeLabel.setForeground(UIConstants.TEXT_SECONDARY);
+        left.add(dateTimeLabel);
+        header.add(left, "grow");
 
-        return cardsPanel;
+        statusLabel = new JLabel("Connected to RMI services");
+        statusLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        statusLabel.setForeground(UIConstants.SUCCESS_COLOR);
+        header.add(statusLabel);
+        return header;
     }
 
-    /**
-     * Creates a single statistic card with accent color.
-     *
-     * @param title Card title
-     * @param value Metric value
-     * @param icon Icon emoji
-     * @param accentColor Accent color
-     * @return The configured card panel
-     */
-    private JPanel createStatisticCard(String title, String value, String icon, Color accentColor) {
-        RoundedPanel card = new RoundedPanel(12, 12, new Color(50, 50, 60), accentColor, 2);
-        card.setLayout(new MigLayout("insets 20, center", "[center]", ""));
+    private RoundedPanel createHeroPanel() {
+        RoundedPanel hero = new RoundedPanel(18, 18, new Color(22, 34, 46));
+        hero.setLayout(new MigLayout("insets 26, fillx", "[grow][220!]", "[][][]"));
 
-        JLabel iconLabel = new JLabel(icon);
-        iconLabel.setFont(new Font("Segoe UI", Font.PLAIN, 40));
-        card.add(iconLabel, "wrap, gap 0 0 15 0");
+        JLabel headline = new JLabel("Operational command center");
+        headline.setFont(new Font("Segoe UI", Font.BOLD, 30));
+        headline.setForeground(UIConstants.TEXT_COLOR);
+        hero.add(headline, "wrap");
 
-        JLabel valueLabel = new JLabel(value);
-        valueLabel.setFont(new Font("Segoe UI", Font.BOLD, 24));
-        valueLabel.setForeground(accentColor);
-        card.add(valueLabel, "wrap");
+        JLabel copy = new JLabel("<html>Track imports, enforce tax rules, issue invoices, "
+                + "capture payments, and review system activity from one place.</html>");
+        copy.setFont(new Font("Segoe UI", Font.PLAIN, 13));
+        copy.setForeground(UIConstants.TEXT_SECONDARY);
+        hero.add(copy, "width 70%, wrap, gapbottom 16");
+
+        JPanel heroActions = new JPanel(new MigLayout("insets 0", "[][12!][grow]", ""));
+        heroActions.setOpaque(false);
+        RoundedButton newImport = new RoundedButton("Create Import");
+        newImport.setStateColors(UIConstants.PRIMARY_COLOR,
+                UIConstants.PRIMARY_COLOR.brighter(), UIConstants.PRIMARY_DARK);
+        newImport.addActionListener(e -> openModule("imports"));
+        RoundedButton recordPayment = new RoundedButton("Record Payment");
+        recordPayment.setStateColors(UIConstants.ACCENT_COLOR,
+                UIConstants.ACCENT_COLOR.brighter(), UIConstants.ACCENT_COLOR.darker());
+        recordPayment.addActionListener(e -> openModule("payments"));
+        heroActions.add(newImport, "w 150!, h 42!");
+        heroActions.add(recordPayment, "w 150!, h 42!");
+        hero.add(heroActions, "wrap");
+
+        JLabel badge = new JLabel("RMI + Hibernate + Swing");
+        badge.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        badge.setForeground(UIConstants.ACCENT_COLOR);
+        hero.add(badge, "cell 1 0, alignx right");
+
+        return hero;
+    }
+
+    private JPanel createMetricsPanel() {
+        JPanel cards = new JPanel(new java.awt.GridLayout(1, 4, 16, 0));
+        cards.setOpaque(false);
+        importsMetric = metricValueCard(cards, "Imports", "Loading...", UIConstants.PRIMARY_COLOR);
+        taxMetric = metricValueCard(cards, "Tax Profiles", "Loading...", UIConstants.ACCENT_COLOR);
+        paymentsMetric = metricValueCard(cards, "Payments", "Loading...", UIConstants.SUCCESS_COLOR);
+        usersMetric = metricValueCard(cards, "Users", "Loading...", UIConstants.INFO_COLOR);
+        return cards;
+    }
+
+    private JLabel metricValueCard(JPanel container, String label, String initialValue, Color accent) {
+        RoundedPanel card = new RoundedPanel(14, 14, new Color(24, 36, 48), accent, 2);
+        card.setLayout(new MigLayout("insets 18", "[grow]", "[][]"));
+        JLabel labelComponent = new JLabel(label);
+        labelComponent.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        labelComponent.setForeground(UIConstants.TEXT_SECONDARY);
+        JLabel valueComponent = new JLabel(initialValue);
+        valueComponent.setFont(new Font("Segoe UI", Font.BOLD, 26));
+        valueComponent.setForeground(accent);
+        card.add(labelComponent, "wrap");
+        card.add(valueComponent);
+        container.add(card);
+        return valueComponent;
+    }
+
+    private RoundedPanel createActionStrip() {
+        RoundedPanel strip = new RoundedPanel(14, 14, new Color(24, 36, 48));
+        strip.setLayout(new MigLayout("insets 18, fillx", "[grow][grow][grow][grow]", ""));
+
+        strip.add(actionTile("Manage Taxes", "Keep rates and descriptions up to date", () -> openModule("taxes")), "grow");
+        strip.add(actionTile("Issue Invoice", "Create or revise tax invoices", () -> openModule("invoices")), "grow");
+        strip.add(actionTile("Review Notifications", "OTP and workflow audit trail", () -> openModule("notifications")), "grow");
+        strip.add(actionTile("Export Reports", "Generate CSV summaries", () -> openModule("reports")), "grow");
+        return strip;
+    }
+
+    private RoundedPanel actionTile(String title, String description, Runnable action) {
+        RoundedPanel tile = new RoundedPanel(12, 12, new Color(30, 44, 57));
+        tile.setLayout(new MigLayout("insets 16", "[grow]", "[][]"));
+        tile.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         JLabel titleLabel = new JLabel(title);
-        titleLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-        titleLabel.setForeground(UIConstants.TEXT_SECONDARY);
-        card.add(titleLabel);
+        titleLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        titleLabel.setForeground(UIConstants.TEXT_COLOR);
+        JLabel descLabel = new JLabel("<html>" + description + "</html>");
+        descLabel.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        descLabel.setForeground(UIConstants.TEXT_SECONDARY);
+        tile.add(titleLabel, "wrap");
+        tile.add(descLabel);
+        tile.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                action.run();
+            }
+        });
+        return tile;
+    }
 
+    private RoundedPanel createActivityPanel() {
+        RoundedPanel panel = new RoundedPanel(14, 14, new Color(24, 36, 48));
+        panel.setLayout(new MigLayout("insets 20, fillx, wrap 1", "[grow]", ""));
+
+        JLabel title = new JLabel("Recent operational activity");
+        title.setFont(new Font("Segoe UI", Font.BOLD, 18));
+        title.setForeground(UIConstants.TEXT_COLOR);
+        panel.add(title, "wrap, gapbottom 10");
+
+        activityPanel = new JPanel(new MigLayout("insets 0, fillx, wrap 1", "[grow]", ""));
+        activityPanel.setOpaque(false);
+        panel.add(activityPanel, "growx");
+        return panel;
+    }
+
+    private void loadOverview() {
+        if (userService == null || importItemService == null || taxService == null
+                || invoiceService == null || paymentService == null || notificationService == null) {
+            statusLabel.setText("Some services are unavailable. Check the RMI server.");
+            statusLabel.setForeground(UIConstants.WARNING_COLOR);
+            renderActivity(List.of());
+            return;
+        }
+
+        setLoading(true);
+        new SwingWorker<Void, Void>() {
+            List<User> users;
+            List<ImportItem> items;
+            List<Tax> taxes;
+            List<Invoice> invoices;
+            List<Payment> payments;
+            List<Notification> notifications;
+
+            @Override
+            protected Void doInBackground() throws Exception {
+                users = userService.findAll();
+                items = importItemService.findAllItems();
+                taxes = taxService.findAll();
+                invoices = invoiceService.findAll();
+                payments = paymentService.findAll();
+                notifications = notificationService.findAll();
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    get();
+                    importsMetric.setText(String.valueOf(items.size()));
+                    taxMetric.setText(String.valueOf(taxes.size()));
+                    paymentsMetric.setText(payments.size() + " / " + invoices.size());
+                    usersMetric.setText(String.valueOf(users.size()));
+                    renderActivity(notifications.isEmpty() ? synthesizeActivity(items, payments) : notifications);
+                    statusLabel.setText("Dashboard refreshed successfully");
+                    statusLabel.setForeground(UIConstants.SUCCESS_COLOR);
+                } catch (Exception ex) {
+                    statusLabel.setText(extractError(ex, "Could not load dashboard data"));
+                    statusLabel.setForeground(UIConstants.ERROR_COLOR);
+                    renderActivity(List.of());
+                } finally {
+                    setLoading(false);
+                }
+            }
+        }.execute();
+    }
+
+    private List<Notification> synthesizeActivity(List<ImportItem> items, List<Payment> payments) {
+        java.util.ArrayList<Notification> generated = new java.util.ArrayList<>();
+        for (ImportItem item : items.stream().limit(3).toList()) {
+            Notification n = new Notification();
+            n.setNotificationType("IMPORT");
+            n.setRecipient(item.getImporterName());
+            n.setStatus(item.getStatus());
+            n.setMessage("Import item " + item.getItemName() + " is " + item.getStatus());
+            n.setSentAt(item.getImportDate());
+            generated.add(n);
+        }
+        for (Payment payment : payments.stream().limit(3).toList()) {
+            Notification n = new Notification();
+            n.setNotificationType("PAYMENT");
+            n.setRecipient(payment.getInvoice() == null ? "Invoice" : payment.getInvoice().getInvoiceNumber());
+            n.setStatus(payment.getPaymentStatus());
+            n.setMessage("Payment of " + payment.getAmountPaid() + " via " + payment.getPaymentMethod());
+            n.setSentAt(payment.getPaymentDate());
+            generated.add(n);
+        }
+        return generated;
+    }
+
+    private void renderActivity(List<Notification> notifications) {
+        activityPanel.removeAll();
+        if (notifications.isEmpty()) {
+            activityPanel.add(activityLabel("No recent activity has been recorded yet."));
+        } else {
+            for (Notification notification : notifications.stream().limit(6).toList()) {
+                activityPanel.add(activityCard(notification), "growx, gapbottom 10");
+            }
+        }
+        activityPanel.revalidate();
+        activityPanel.repaint();
+    }
+
+    private RoundedPanel activityCard(Notification notification) {
+        RoundedPanel card = new RoundedPanel(10, 10, new Color(29, 43, 55));
+        card.setLayout(new MigLayout("insets 14, fillx", "[grow][pref]", "[][]"));
+        JLabel message = new JLabel("<html><b>" + safe(notification.getNotificationType())
+                + "</b>  " + safe(notification.getMessage()) + "</html>");
+        message.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        message.setForeground(UIConstants.TEXT_COLOR);
+        JLabel status = new JLabel(safe(notification.getStatus()));
+        status.setFont(new Font("Segoe UI", Font.BOLD, 11));
+        status.setForeground(colorForStatus(notification.getStatus()));
+        JLabel meta = new JLabel(safe(notification.getRecipient()) + "  |  " + safe(notification.getSentAt()));
+        meta.setFont(new Font("Segoe UI", Font.PLAIN, 11));
+        meta.setForeground(UIConstants.TEXT_SECONDARY);
+        card.add(message, "grow");
+        card.add(status, "alignx right, wrap");
+        card.add(meta, "span");
         return card;
     }
 
-    /**
-     * Creates quick actions panel with placeholder buttons.
-     *
-     * @return The quick actions panel
-     */
-    private JPanel createQuickActionsPanel() {
-        JPanel panel = new JPanel(new GridLayout(1, 4, 15, 0));
-        panel.setBackground(UIConstants.BACKGROUND_COLOR);
-
-        String[] actions = {"New Import", "View Reports", "Process Payment", "User Management"};
-
-        for (String action : actions) {
-            RoundedButton button = new RoundedButton(action);
-            button.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-            button.addActionListener(e -> {
-                if ("New Import".equals(action)) {
-                    openImportItemsFrame();
-                } else {
-                    logger.info("Action clicked: {}", action);
-                }
-            });
-            panel.add(button);
-        }
-
-        return panel;
+    private JLabel activityLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        label.setForeground(UIConstants.TEXT_SECONDARY);
+        return label;
     }
 
-    /**
-     * Creates recent activity panel placeholder.
-     *
-     * @return The activity panel
-     */
-    private JPanel createRecentActivityPanel() {
-        RoundedPanel panel = new RoundedPanel(8, 8, new Color(50, 50, 60));
-        panel.setLayout(new MigLayout("insets 15, fillx", "[grow]", ""));
-        panel.setPreferredSize(new Dimension(0, 180));
-
-        String[] activities = {
-            "John Doe imported 5 items - 2 hours ago",
-            "Tax report generated automatically - 5 hours ago",
-            "Payment processed: $50,000 - Yesterday",
-            "System backup completed - 2 days ago"
+    private Color colorForStatus(String status) {
+        if (status == null) {
+            return UIConstants.TEXT_SECONDARY;
+        }
+        return switch (status.toUpperCase()) {
+            case "PAID", "CLEARED", "SENT" -> UIConstants.SUCCESS_COLOR;
+            case "FAILED", "HOLD" -> UIConstants.ERROR_COLOR;
+            default -> UIConstants.WARNING_COLOR;
         };
-
-        for (String activity : activities) {
-            JLabel actLabel = new JLabel("• " + activity);
-            actLabel.setFont(new Font("Segoe UI", Font.PLAIN, 12));
-            actLabel.setForeground(UIConstants.TEXT_SECONDARY);
-            panel.add(actLabel, "wrap");
-        }
-
-        return panel;
     }
 
-    /**
-     * Handles navigation menu items.
-     *
-     * @param item The selected navigation item
-     */
-    private void handleNavigation(String item) {
-        logger.info("Navigation: {}", item);
-        if ("Import Items".equals(item)) {
-            openImportItemsFrame();
+    private void openModule(String action) {
+        switch (action) {
+            case "overview" -> loadOverview();
+            case "users" -> openFrame(new UserManagementFrame());
+            case "imports" -> openFrame(new ImportItemFrame());
+            case "taxes" -> openFrame(new TaxFrame());
+            case "invoices" -> openFrame(new InvoiceFrame());
+            case "payments" -> openFrame(new PaymentFrame());
+            case "reports" -> openFrame(new ReportsFrame());
+            case "notifications" -> openFrame(new NotificationFrame());
+            default -> JOptionPane.showMessageDialog(this, "Module is not available yet.");
         }
     }
 
-    private void openImportItemsFrame() {
-        logger.info("Opening ImportItemFrame for user: {}", username);
-        ImportItemFrame importItemFrame = new ImportItemFrame();
-        importItemFrame.setVisible(true);
+    private void openFrame(JFrame frame) {
+        frame.setVisible(true);
         dispose();
     }
 
-    /**
-     * Handles logout action.
-     */
-    private void handleLogout() {
-        logger.info("User {} logging out", username);
-        int confirmed = JOptionPane.showConfirmDialog(this,
-                "Are you sure you want to logout?",
-                "Confirm Logout", JOptionPane.YES_NO_OPTION);
-
-        if (confirmed == JOptionPane.YES_OPTION) {
-            CurrentSession.clear();
-            dispose();
-            LoginFrame loginFrame = new LoginFrame();
-            loginFrame.setVisible(true);
+    private void logout() {
+        if (JOptionPane.showConfirmDialog(this, "Logout from the current session?",
+                "Confirm Logout", JOptionPane.YES_NO_OPTION) != JOptionPane.YES_OPTION) {
+            return;
         }
+        CurrentSession.clear();
+        dispose();
+        new LoginFrame().setVisible(true);
     }
 
-    /**
-     * Starts a background thread to update the date and time display.
-     */
+    private void setLoading(boolean loading) {
+        setCursor(Cursor.getPredefinedCursor(loading ? Cursor.WAIT_CURSOR : Cursor.DEFAULT_CURSOR));
+    }
+
     private void startClockUpdate() {
         Thread clockThread = new Thread(() -> {
-            while (true) {
+            while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    LocalDateTime now = LocalDateTime.now();
-                    String formattedDate = now.format(DateTimeFormatter.ofPattern(
-                            "EEEE, MMMM dd, yyyy | HH:mm:ss"));
-                    dateTimeLabel.setText(formattedDate);
+                    dateTimeLabel.setText(LocalDateTime.now()
+                            .format(DateTimeFormatter.ofPattern("EEEE, MMM dd yyyy | HH:mm:ss")));
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
-                    logger.debug("Clock update thread interrupted", e);
-                    break;
+                    Thread.currentThread().interrupt();
                 }
             }
-        });
+        }, "dashboard-clock");
         clockThread.setDaemon(true);
         clockThread.start();
+    }
+
+    private String extractError(Exception ex, String fallback) {
+        Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+        return cause.getMessage() == null ? fallback : cause.getMessage();
+    }
+
+    private String safe(Object value) {
+        return value == null ? "-" : value.toString();
     }
 }

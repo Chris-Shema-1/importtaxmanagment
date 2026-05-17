@@ -54,11 +54,6 @@ public class TaxServiceImpl extends AbstractRemoteCrudService<Tax> implements Ta
         });
     }
 
-    @Override
-    public List<Tax> findAll() throws RemoteException {
-        return execute("findAll", super::findAll);
-    }
-
     private Tax normalize(Tax entity, boolean requireId) {
         if (entity == null) {
             throw new IllegalArgumentException("Tax data is required");
