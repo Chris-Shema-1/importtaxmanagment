@@ -7,6 +7,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
@@ -14,6 +16,8 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "import_items")
@@ -62,6 +66,14 @@ public class ImportItem implements Serializable {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
     private User user;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "import_item_taxes",
+        joinColumns = @JoinColumn(name = "item_id"),
+        inverseJoinColumns = @JoinColumn(name = "tax_id")
+    )
+    private List<Tax> appliedTaxes = new ArrayList<>();
 
     @Column(name = "created_at", insertable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -188,6 +200,14 @@ public class ImportItem implements Serializable {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public List<Tax> getAppliedTaxes() {
+        return appliedTaxes;
+    }
+
+    public void setAppliedTaxes(List<Tax> appliedTaxes) {
+        this.appliedTaxes = appliedTaxes;
     }
 
     public LocalDateTime getCreatedAt() {

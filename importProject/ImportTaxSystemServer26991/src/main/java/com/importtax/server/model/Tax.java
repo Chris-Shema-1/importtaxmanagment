@@ -5,10 +5,13 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.Table;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "taxes")
@@ -29,6 +32,9 @@ public class Tax implements Serializable {
 
     @Column(name = "description", length = 1000)
     private String description;
+
+    @ManyToMany(mappedBy = "appliedTaxes")
+    private List<ImportItem> importItems = new ArrayList<>();
 
     public Tax() {
     }

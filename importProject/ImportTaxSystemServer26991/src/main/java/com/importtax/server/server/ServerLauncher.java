@@ -1,10 +1,12 @@
 package com.importtax.server.server;
 
+import com.importtax.server.broker.NotificationBroker;
 import com.importtax.server.config.ServerConfig;
 import com.importtax.server.util.DatabaseSeeder;
 import com.importtax.server.rmi.impl.ImportItemServiceImpl;
 import com.importtax.server.rmi.impl.InvoiceServiceImpl;
 import com.importtax.server.rmi.impl.NotificationServiceImpl;
+import com.importtax.server.rmi.impl.OtpServiceImpl;
 import com.importtax.server.rmi.impl.PaymentServiceImpl;
 import com.importtax.server.rmi.impl.TaxServiceImpl;
 import com.importtax.server.rmi.impl.UserServiceImpl;
@@ -22,16 +24,14 @@ import java.rmi.server.ExportException;
 public final class ServerLauncher {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ServerLauncher.class);
-
     private static final String HOST = "localhost";
 
-    private ServerLauncher() {
-    }
+    private ServerLauncher() {}
 
     public static void main(String[] args) {
         LOGGER.info("Starting {} RMI server.", ServerConfig.APPLICATION_NAME);
-
         try {
+            NotificationBroker.start();
             DatabaseSeeder.seedIfNeeded();
             startRegistry();
             bindServices();
@@ -40,12 +40,13 @@ public final class ServerLauncher {
             LOGGER.info("{} RMI server started successfully on port {}.", ServerConfig.APPLICATION_NAME,
                     ServerConfig.RMI_REGISTRY_PORT);
             LOGGER.info("Available services:");
-            LOGGER.info("  rmi://{}:{}/userService", HOST, ServerConfig.RMI_REGISTRY_PORT);
-            LOGGER.info("  rmi://{}:{}/importItemService", HOST, ServerConfig.RMI_REGISTRY_PORT);
-            LOGGER.info("  rmi://{}:{}/taxService", HOST, ServerConfig.RMI_REGISTRY_PORT);
-            LOGGER.info("  rmi://{}:{}/invoiceService", HOST, ServerConfig.RMI_REGISTRY_PORT);
-            LOGGER.info("  rmi://{}:{}/paymentService", HOST, ServerConfig.RMI_REGISTRY_PORT);
+            LOGGER.info("  rmi://{}:{}/userService",         HOST, ServerConfig.RMI_REGISTRY_PORT);
+            LOGGER.info("  rmi://{}:{}/importItemService",   HOST, ServerConfig.RMI_REGISTRY_PORT);
+            LOGGER.info("  rmi://{}:{}/taxService",          HOST, ServerConfig.RMI_REGISTRY_PORT);
+            LOGGER.info("  rmi://{}:{}/invoiceService",      HOST, ServerConfig.RMI_REGISTRY_PORT);
+            LOGGER.info("  rmi://{}:{}/paymentService",      HOST, ServerConfig.RMI_REGISTRY_PORT);
             LOGGER.info("  rmi://{}:{}/notificationService", HOST, ServerConfig.RMI_REGISTRY_PORT);
+            LOGGER.info("  rmi://{}:{}/otpService",          HOST, ServerConfig.RMI_REGISTRY_PORT);
         } catch (Exception exception) {
             LOGGER.error("Failed to start {} RMI server.", ServerConfig.APPLICATION_NAME, exception);
             HibernateUtil.shutdown();
@@ -65,12 +66,13 @@ public final class ServerLauncher {
     }
 
     private static void bindServices() throws Exception {
-        bind("userService", new UserServiceImpl());
-        bind("importItemService", new ImportItemServiceImpl());
-        bind("taxService", new TaxServiceImpl());
-        bind("invoiceService", new InvoiceServiceImpl());
-        bind("paymentService", new PaymentServiceImpl());
+        bind("userService",         new UserServiceImpl());
+        bind("importItemService",   new ImportItemServiceImpl());
+        bind("taxService",          new TaxServiceImpl());
+        bind("invoiceService",      new InvoiceServiceImpl());
+        bind("paymentService",      new PaymentServiceImpl());
         bind("notificationService", new NotificationServiceImpl());
+        bind("otpService",          new OtpServiceImpl());
     }
 
     private static void bind(String serviceName, Remote service) throws Exception {
@@ -86,8 +88,9 @@ public final class ServerLauncher {
 
     private static void registerShutdownHook() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            LOGGER.info("Shutting down Hibernate resources.");
+            LOGGER.info("Shutting down server resources.");
             HibernateUtil.shutdown();
+            NotificationBroker.stop();
         }, "import-tax-rmi-shutdown"));
     }
 }

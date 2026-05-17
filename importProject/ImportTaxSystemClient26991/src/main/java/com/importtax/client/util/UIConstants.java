@@ -62,6 +62,7 @@ public class UIConstants {
     public static final String RMI_SERVICE_INVOICE      = "invoiceService";
     public static final String RMI_SERVICE_PAYMENT      = "paymentService";
     public static final String RMI_SERVICE_NOTIFICATION = "notificationService";
+    public static final String RMI_SERVICE_OTP          = "otpService";
 
     // ── Helpers ────────────────────────────────────────────────────────────
     public static Color withAlpha(Color c, int alpha) {

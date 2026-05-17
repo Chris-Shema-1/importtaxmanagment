@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ImportItem implements Serializable {
 
@@ -22,6 +24,7 @@ public class ImportItem implements Serializable {
     private LocalDate importDate;
     private String status;
     private User user;
+    private List<Tax> appliedTaxes = new ArrayList<>();
     private LocalDateTime createdAt;
 
     public Long getItemId() {
@@ -126,6 +129,14 @@ public class ImportItem implements Serializable {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public List<Tax> getAppliedTaxes() {
+        return appliedTaxes;
+    }
+
+    public void setAppliedTaxes(List<Tax> appliedTaxes) {
+        this.appliedTaxes = appliedTaxes;
     }
 
     public LocalDateTime getCreatedAt() {

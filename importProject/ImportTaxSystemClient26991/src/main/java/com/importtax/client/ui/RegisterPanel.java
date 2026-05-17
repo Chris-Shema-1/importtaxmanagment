@@ -13,6 +13,7 @@ import java.awt.event.*;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import javax.swing.*;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.LineBorder;
 import net.miginfocom.swing.MigLayout;
@@ -418,6 +419,19 @@ public class RegisterPanel extends JPanel {
 
         setLoading(true);
         User user = new User(fullName, email, username, password, role.name());
+
+        // Step 1: verify OTP before creating the account
+        OtpVerificationDialog otpDlg = new OtpVerificationDialog(
+            (java.awt.Frame) SwingUtilities.getWindowAncestor(RegisterPanel.this),
+            username);
+        otpDlg.setVisible(true);
+        if (!otpDlg.isVerified()) {
+            setLoading(false);
+            showError("Registration cancelled — OTP not verified.");
+            return;
+        }
+
+        // Step 2: create the account
         new SwingWorker<User, Void>() {
             @Override protected User doInBackground() throws Exception {
                 return userService.registerUser(user);

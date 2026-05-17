@@ -31,6 +31,16 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.List;
 import net.miginfocom.swing.MigLayout;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.FontFactory;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
 
 public class ReportsPage extends JPanel {
 
@@ -101,10 +111,13 @@ public class ReportsPage extends JPanel {
 
         var refreshBtn = TaxPage.btn("Refresh",       UIConstants.PRIMARY_COLOR);
         var exportBtn  = TaxPage.btn("Export CSV",    UIConstants.SUCCESS_COLOR);
+        var pdfBtn     = TaxPage.btn("Export PDF",    new Color(192, 57, 43));
         refreshBtn.addActionListener(e -> loadData());
         exportBtn.addActionListener(e  -> exportCsv());
+        pdfBtn.addActionListener(e     -> exportPdf());
         hdr.add(refreshBtn, "h 38!, gapleft 8");
         hdr.add(exportBtn,  "h 38!, gapleft 8");
+        hdr.add(pdfBtn,     "h 38!, gapleft 8");
         root.add(hdr, "growx, wrap, gapbottom 24");
 
         // ── Import stat cards ──
@@ -310,6 +323,146 @@ public class ReportsPage extends JPanel {
         holder.revalidate();
         holder.repaint();
     }
+
+    // ── PDF Export ─────────────────────────────────────────────────────────
+    private void exportPdf() {
+        JFileChooser fc = new JFileChooser();
+        fc.setDialogTitle("Export Report as PDF");
+        fc.setFileFilter(new FileNameExtensionFilter("PDF Files (*.pdf)", "pdf"));
+        fc.setSelectedFile(new File("import_tax_report.pdf"));
+        if (fc.showSaveDialog(shell) != JFileChooser.APPROVE_OPTION) return;
+
+        File file = fc.getSelectedFile();
+        if (!file.getName().endsWith(".pdf")) file = new File(file.getAbsolutePath() + ".pdf");
+        final File finalFile = file;
+
+        new SwingWorker<Void, Void>() {
+            protected Void doInBackground() throws Exception {
+                Document doc = new Document();
+                PdfWriter.getInstance(doc, new java.io.FileOutputStream(finalFile));
+                doc.open();
+
+                com.itextpdf.text.Font titleFont   = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
+                com.itextpdf.text.Font sectionFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
+                com.itextpdf.text.Font bodyFont    = FontFactory.getFont(FontFactory.HELVETICA, 9);
+                com.itextpdf.text.Font headerFont  = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9,
+                    new BaseColor(255, 255, 255));
+
+                Paragraph mainTitle = new Paragraph("Import Tax Management System — Report", titleFont);
+                mainTitle.setAlignment(Element.ALIGN_CENTER);
+                mainTitle.setSpacingAfter(4);
+                doc.add(mainTitle);
+                Paragraph date = new Paragraph("Generated: " + java.time.LocalDate.now(), bodyFont);
+                date.setAlignment(Element.ALIGN_CENTER);
+                date.setSpacingAfter(16);
+                doc.add(date);
+
+                // ── Import Items ──
+                doc.add(new Paragraph("Import Items", sectionFont));
+                doc.add(new Paragraph(" "));
+                if (lastImports != null && !lastImports.isEmpty()) {
+                    PdfPTable t = new PdfPTable(new float[]{1, 3, 2, 1, 2, 2, 2});
+                    t.setWidthPercentage(100);
+                    BaseColor hdrColor = new BaseColor(0, 100, 180);
+                    for (String h : new String[]{"ID", "Item Name", "Category", "Qty", "Unit Price", "Total Tax", "Status"}) {
+                        PdfPCell c = new PdfPCell(new Phrase(h, headerFont));
+                        c.setBackgroundColor(hdrColor);
+                        c.setPadding(5);
+                        t.addCell(c);
+                    }
+                    for (ImportItem i : lastImports) {
+                        t.addCell(cell(str(i.getItemId()), bodyFont));
+                        t.addCell(cell(str(i.getItemName()), bodyFont));
+                        t.addCell(cell(str(i.getCategory()), bodyFont));
+                        t.addCell(cell(str(i.getQuantity()), bodyFont));
+                        t.addCell(cell(str(i.getUnitPrice()), bodyFont));
+                        t.addCell(cell(str(i.getTotalTax()), bodyFont));
+                        t.addCell(cell(str(i.getStatus()), bodyFont));
+                    }
+                    doc.add(t);
+                } else {
+                    doc.add(new Paragraph("No import items.", bodyFont));
+                }
+
+                doc.add(new Paragraph(" "));
+
+                // ── Invoices ──
+                doc.add(new Paragraph("Invoices", sectionFont));
+                doc.add(new Paragraph(" "));
+                if (lastInvoices != null && !lastInvoices.isEmpty()) {
+                    PdfPTable t = new PdfPTable(new float[]{1, 3, 2, 2});
+                    t.setWidthPercentage(100);
+                    BaseColor hdrColor = new BaseColor(0, 100, 180);
+                    for (String h : new String[]{"ID", "Invoice #", "Total Tax", "Issue Date"}) {
+                        PdfPCell c = new PdfPCell(new Phrase(h, headerFont));
+                        c.setBackgroundColor(hdrColor);
+                        c.setPadding(5);
+                        t.addCell(c);
+                    }
+                    for (Invoice i : lastInvoices) {
+                        t.addCell(cell(str(i.getInvoiceId()), bodyFont));
+                        t.addCell(cell(str(i.getInvoiceNumber()), bodyFont));
+                        t.addCell(cell(str(i.getTotalTaxAmount()), bodyFont));
+                        t.addCell(cell(str(i.getIssueDate()), bodyFont));
+                    }
+                    doc.add(t);
+                } else {
+                    doc.add(new Paragraph("No invoices.", bodyFont));
+                }
+
+                doc.add(new Paragraph(" "));
+
+                // ── Payments ──
+                doc.add(new Paragraph("Payments", sectionFont));
+                doc.add(new Paragraph(" "));
+                if (lastPayments != null && !lastPayments.isEmpty()) {
+                    PdfPTable t = new PdfPTable(new float[]{1, 2, 2, 2, 2});
+                    t.setWidthPercentage(100);
+                    BaseColor hdrColor = new BaseColor(0, 100, 180);
+                    for (String h : new String[]{"ID", "Amount Paid", "Method", "Status", "Date"}) {
+                        PdfPCell c = new PdfPCell(new Phrase(h, headerFont));
+                        c.setBackgroundColor(hdrColor);
+                        c.setPadding(5);
+                        t.addCell(c);
+                    }
+                    for (Payment p : lastPayments) {
+                        t.addCell(cell(str(p.getPaymentId()), bodyFont));
+                        t.addCell(cell(str(p.getAmountPaid()), bodyFont));
+                        t.addCell(cell(str(p.getPaymentMethod()), bodyFont));
+                        t.addCell(cell(str(p.getPaymentStatus()), bodyFont));
+                        t.addCell(cell(str(p.getPaymentDate()), bodyFont));
+                    }
+                    doc.add(t);
+                } else {
+                    doc.add(new Paragraph("No payments.", bodyFont));
+                }
+
+                doc.close();
+                return null;
+            }
+            protected void done() {
+                try {
+                    get();
+                    JOptionPane.showMessageDialog(shell,
+                        "PDF exported to:\n" + finalFile.getAbsolutePath(),
+                        "Export Successful", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(shell,
+                        "PDF export failed: " + ex.getMessage(),
+                        "Export Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
+    }
+
+    private PdfPCell cell(String text, com.itextpdf.text.Font font) {
+        PdfPCell c = new PdfPCell(new Phrase(text == null ? "" : text, font));
+        c.setPadding(4);
+        c.setBorderColor(new BaseColor(220, 224, 230));
+        return c;
+    }
+
+    private String str(Object v) { return v == null ? "" : v.toString(); }
 
     // ── CSV Export ─────────────────────────────────────────────────────────
     private void exportCsv() {
