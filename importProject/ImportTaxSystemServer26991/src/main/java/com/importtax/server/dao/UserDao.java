@@ -2,6 +2,7 @@ package com.importtax.server.dao;
 
 import com.importtax.server.model.User;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface UserDao extends GenericDao<User> {
@@ -11,4 +12,6 @@ public interface UserDao extends GenericDao<User> {
     Optional<User> findByUsername(String username);
 
     Optional<User> findByEmail(String email);
+
+    List<User> findAllUsers();
 }

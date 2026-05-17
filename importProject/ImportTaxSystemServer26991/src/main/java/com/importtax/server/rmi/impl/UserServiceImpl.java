@@ -107,6 +107,16 @@ public class UserServiceImpl extends AbstractRemoteCrudService<User> implements 
         return execute("findByUsername", () -> sanitize(userDao.findByUsername(username).orElse(null)));
     }
 
+    @Override
+    public User findById(Long id) throws RemoteException {
+        return execute("findById", () -> sanitize(userDao.findById(id).orElse(null)));
+    }
+
+    @Override
+    public java.util.List<User> findAll() throws RemoteException {
+        return execute("findAll", () -> userDao.findAllUsers().stream().map(this::sanitize).toList());
+    }
+
     private User sanitize(User user) {
         if (user != null) {
             user.setPassword(null);

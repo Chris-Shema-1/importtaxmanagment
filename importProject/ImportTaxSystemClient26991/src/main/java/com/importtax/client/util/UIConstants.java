@@ -23,23 +23,23 @@ public class UIConstants {
 
     // ==================== Color Palette ====================
     // Primary Colors
-    public static final Color PRIMARY_COLOR = new Color(0, 120, 215);
-    public static final Color PRIMARY_DARK = new Color(0, 100, 180);
-    public static final Color PRIMARY_LIGHT = new Color(100, 180, 255);
+    public static final Color PRIMARY_COLOR = new Color(16, 124, 141);
+    public static final Color PRIMARY_DARK = new Color(11, 84, 96);
+    public static final Color PRIMARY_LIGHT = new Color(120, 213, 224);
 
     // Accent Colors
-    public static final Color ACCENT_COLOR = new Color(255, 140, 0);
-    public static final Color SUCCESS_COLOR = new Color(34, 177, 76);
-    public static final Color ERROR_COLOR = new Color(220, 53, 69);
-    public static final Color WARNING_COLOR = new Color(255, 193, 7);
-    public static final Color INFO_COLOR = new Color(23, 162, 184);
+    public static final Color ACCENT_COLOR = new Color(232, 168, 56);
+    public static final Color SUCCESS_COLOR = new Color(58, 179, 126);
+    public static final Color ERROR_COLOR = new Color(213, 88, 88);
+    public static final Color WARNING_COLOR = new Color(235, 184, 62);
+    public static final Color INFO_COLOR = new Color(86, 151, 230);
 
     // Neutral Colors
-    public static final Color BACKGROUND_COLOR = new Color(30, 30, 30);
-    public static final Color PANEL_COLOR = new Color(45, 45, 45);
-    public static final Color BORDER_COLOR = new Color(60, 60, 60);
-    public static final Color TEXT_COLOR = new Color(220, 220, 220);
-    public static final Color TEXT_SECONDARY = new Color(150, 150, 150);
+    public static final Color BACKGROUND_COLOR = new Color(18, 24, 31);
+    public static final Color PANEL_COLOR = new Color(28, 38, 48);
+    public static final Color BORDER_COLOR = new Color(49, 63, 77);
+    public static final Color TEXT_COLOR = new Color(235, 240, 245);
+    public static final Color TEXT_SECONDARY = new Color(150, 168, 182);
 
     // ==================== Font Definitions ====================
     public static final Font FONT_TITLE = new Font("Segoe UI", Font.BOLD, 24);
@@ -83,10 +83,11 @@ public class UIConstants {
 
     // ==================== RMI Configuration ====================
     public static final String RMI_SERVICE_USER = "userService";
-    public static final String RMI_SERVICE_TAX = "TaxService";
+    public static final String RMI_SERVICE_TAX = "taxService";
     public static final String RMI_SERVICE_IMPORT = "importItemService";
-    public static final String RMI_SERVICE_INVOICE = "InvoiceService";
-    public static final String RMI_SERVICE_PAYMENT = "PaymentService";
+    public static final String RMI_SERVICE_INVOICE = "invoiceService";
+    public static final String RMI_SERVICE_PAYMENT = "paymentService";
+    public static final String RMI_SERVICE_NOTIFICATION = "notificationService";
 
     // ==================== Icons & Images ====================
     public static final String ICON_LOGIN_LOGO = "images/logo.png";

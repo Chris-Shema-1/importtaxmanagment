@@ -5,6 +5,7 @@ import com.importtax.server.model.User;
 import jakarta.persistence.TypedQuery;
 import org.hibernate.SessionFactory;
 
+import java.util.List;
 import java.util.Optional;
 
 public class UserDaoImpl extends GenericDaoImpl<User> implements UserDao {
@@ -49,5 +50,12 @@ public class UserDaoImpl extends GenericDaoImpl<User> implements UserDao {
             query.setParameter("email", email.toLowerCase());
             return query.getResultStream().findFirst();
         }, "findByEmail");
+    }
+
+    @Override
+    public List<User> findAllUsers() {
+        return executeReadOnly(session -> session.createQuery(
+                "select u from User u order by u.createdAt desc, u.userId desc",
+                User.class).getResultList(), "findAllUsers");
     }
 }
