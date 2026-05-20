@@ -1,5 +1,6 @@
 package com.importtax.server.rmi.impl;
 
+import com.importtax.server.constants.ImportItemStatus;
 import com.importtax.server.dao.ImportItemDao;
 import com.importtax.server.dao.UserDao;
 import com.importtax.server.dao.impl.ImportItemDaoImpl;
@@ -7,6 +8,8 @@ import com.importtax.server.dao.impl.UserDaoImpl;
 import com.importtax.server.model.ImportItem;
 import com.importtax.server.model.User;
 import com.importtax.server.rmi.ImportItemService;
+import com.importtax.server.service.NotificationWorkflowService;
+import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,19 +25,26 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
 
     private final ImportItemDao importItemDao;
     private final UserDao userDao;
+    private final NotificationWorkflowService notificationWorkflow;
 
     public ImportItemServiceImpl() throws RemoteException {
-        this(new ImportItemDaoImpl(), new UserDaoImpl());
+        this(new ImportItemDaoImpl(), new UserDaoImpl(), new NotificationWorkflowService());
     }
 
     public ImportItemServiceImpl(ImportItemDao importItemDao) throws RemoteException {
-        this(importItemDao, new UserDaoImpl());
+        this(importItemDao, new UserDaoImpl(), new NotificationWorkflowService());
     }
 
     public ImportItemServiceImpl(ImportItemDao importItemDao, UserDao userDao) throws RemoteException {
+        this(importItemDao, userDao, new NotificationWorkflowService());
+    }
+
+    public ImportItemServiceImpl(ImportItemDao importItemDao, UserDao userDao,
+                                 NotificationWorkflowService notificationWorkflow) throws RemoteException {
         super(importItemDao, LOGGER, "ImportItemService");
         this.importItemDao = importItemDao;
         this.userDao = userDao;
+        this.notificationWorkflow = notificationWorkflow;
     }
 
     @Override
@@ -84,6 +94,10 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
             ImportItem existingItem = importItemDao.findItemById(item.getItemId())
                     .orElseThrow(() -> new IllegalArgumentException("Import item not found"));
 
+            String previousStatus = ImportItemStatus.canonicalFromDatabase(existingItem.getStatus());
+            String nextStatus = normalizeStatus(item.getStatus());
+            enforceStatusTransition(previousStatus, nextStatus);
+
             existingItem.setItemName(item.getItemName());
             existingItem.setCategory(item.getCategory());
             existingItem.setDescription(item.getDescription());
@@ -99,8 +113,13 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
                 existingItem.setUser(resolveUser(userId));
             }
 
-            LOGGER.info("Updating import item id={}", existingItem.getItemId());
-            return sanitize(importItemDao.updateItem(existingItem));
+            LOGGER.info("Updating import item id={}, status transition {} -> {}",
+                    existingItem.getItemId(), previousStatus, nextStatus);
+            ImportItem updated = sanitize(importItemDao.updateItem(existingItem));
+            if (ImportItemStatus.PAID.equals(previousStatus) && ImportItemStatus.CLEARED.equals(nextStatus)) {
+                notificationWorkflow.handleClearance(updated);
+            }
+            return updated;
         });
     }
 
@@ -112,7 +131,7 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
             }
             ImportItem item = importItemDao.findItemById(itemId)
                     .orElseThrow(() -> new IllegalArgumentException("Import item not found"));
-            if ("CLEARED".equalsIgnoreCase(item.getStatus())) {
+            if (ImportItemStatus.CLEARED.equals(ImportItemStatus.canonicalFromDatabase(item.getStatus()))) {
                 LOGGER.warn("Delete rejected for cleared import item id={}", itemId);
                 throw new IllegalArgumentException("CLEARED items cannot be deleted");
             }
@@ -170,6 +189,8 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
         return searchItemsByName(itemName);
     }
 
+    private static final int MAX_QUANTITY = 1_000_000;
+
     private void validateItem(ImportItem item, boolean requireId) {
         if (item == null) {
             throw new IllegalArgumentException("Import item data is required");
@@ -177,30 +198,96 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
         if (requireId && item.getItemId() == null) {
             throw new IllegalArgumentException("Import item ID is required");
         }
-        if (isBlank(item.getItemName())) {
-            throw new IllegalArgumentException("Item Name is required");
+
+        String itemName = trimToEmpty(item.getItemName());
+        if (itemName.isEmpty()) {
+            throw new IllegalArgumentException("Item name is required");
         }
-        if (isBlank(item.getCategory())) {
+        if (itemName.length() < 3) {
+            throw new IllegalArgumentException("Item name must be at least 3 characters");
+        }
+
+        String category = trimToEmpty(item.getCategory());
+        if (category.isEmpty()) {
             throw new IllegalArgumentException("Category is required");
         }
-        if (isBlank(item.getImporterName())) {
-            throw new IllegalArgumentException("Importer Name is required");
+        if ("Select Category".equalsIgnoreCase(category)) {
+            throw new IllegalArgumentException("Please select a valid category");
         }
+
+        String importerName = trimToEmpty(item.getImporterName());
+        if (importerName.isEmpty()) {
+            throw new IllegalArgumentException("Importer name is required");
+        }
+        if (importerName.length() < 3) {
+            throw new IllegalArgumentException("Importer name must be at least 3 characters");
+        }
+
+        if (isBlank(item.getCountryOfOrigin())) {
+            throw new IllegalArgumentException("Country of origin is required");
+        }
+
         if (item.getQuantity() == null || item.getQuantity() <= 0) {
-            throw new IllegalArgumentException("Quantity must be greater than 0");
+            throw new IllegalArgumentException("Quantity must be greater than zero");
         }
+        if (item.getQuantity() > MAX_QUANTITY) {
+            throw new IllegalArgumentException("Quantity cannot exceed " + MAX_QUANTITY);
+        }
+
         if (item.getUnitPrice() == null || item.getUnitPrice().compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Unit Price must be greater than 0");
+            throw new IllegalArgumentException("Unit price must be greater than zero");
         }
+
         if (item.getTaxRate() == null
                 || item.getTaxRate().compareTo(BigDecimal.ZERO) < 0
                 || item.getTaxRate().compareTo(BigDecimal.valueOf(100)) > 0) {
-            throw new IllegalArgumentException("Tax Rate must be between 0 and 100");
+            throw new IllegalArgumentException("Tax rate must be between 0 and 100");
         }
+
         if (item.getImportDate() == null) {
-            throw new IllegalArgumentException("Import Date is required");
+            throw new IllegalArgumentException("Import date is required");
+        }
+        if (item.getImportDate().isAfter(LocalDate.now())) {
+            LOGGER.warn("Import date validation failed: future date {}", item.getImportDate());
+            throw new IllegalArgumentException("Import date cannot be in the future");
         }
         normalizeStatus(item.getStatus());
+    }
+
+    private String trimToEmpty(String value) {
+        return value == null ? "" : value.trim();
+    }
+
+    /**
+     * Allowed: PENDING→PAID|HOLD, PAID→CLEARED, HOLD→PENDING.
+     * PAID/CLEARED cannot regress per specification.
+     */
+    private void enforceStatusTransition(String previousCanonical, String nextCanonical) {
+        if (previousCanonical.equals(nextCanonical)) {
+            return;
+        }
+
+        if (ImportItemStatus.CLEARED.equals(nextCanonical)
+                && !ImportItemStatus.PAID.equals(previousCanonical)) {
+            LOGGER.warn("Rejected clearance without payment: current status {}", previousCanonical);
+            throw new IllegalArgumentException(
+                    "Import item cannot be cleared before payment is completed.");
+        }
+
+        boolean allowed = switch (previousCanonical) {
+            case ImportItemStatus.PENDING ->
+                    ImportItemStatus.PAID.equals(nextCanonical) || ImportItemStatus.HOLD.equals(nextCanonical);
+            case ImportItemStatus.PAID -> ImportItemStatus.CLEARED.equals(nextCanonical);
+            case ImportItemStatus.HOLD -> ImportItemStatus.PENDING.equals(nextCanonical);
+            case ImportItemStatus.CLEARED -> false;
+            default -> false;
+        };
+
+        if (!allowed) {
+            LOGGER.warn("Rejected invalid status transition {} -> {}", previousCanonical, nextCanonical);
+            throw new IllegalArgumentException(
+                    String.format("Invalid status transition from %s to %s.", previousCanonical, nextCanonical));
+        }
     }
 
     private void normalizeAndCalculate(ImportItem item) {
@@ -238,19 +325,24 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
     }
 
     private ImportItem sanitize(ImportItem item) {
-        if (item != null && item.getUser() != null) {
-            item.getUser().setPassword(null);
-            item.getUser().setImportItems(null);
+        if (item != null) {
+            // Initialize and sanitize user
+            if (item.getUser() != null) {
+                item.getUser().setPassword(null);
+                item.getUser().setImportItems(null);
+            }
+            // Initialize the lazy-loaded appliedTaxes collection
+            if (item.getAppliedTaxes() != null) {
+                Hibernate.initialize(item.getAppliedTaxes());
+            }
         }
         return item;
     }
 
     private String normalizeStatus(String status) {
-        String normalizedStatus = isBlank(status) ? "PENDING" : status.trim().toUpperCase();
-        if (!"PENDING".equals(normalizedStatus)
-                && !"CLEARED".equals(normalizedStatus)
-                && !"HOLD".equals(normalizedStatus)) {
-            throw new IllegalArgumentException("Status must be PENDING, CLEARED, or HOLD");
+        String normalizedStatus = isBlank(status) ? ImportItemStatus.PENDING : status.trim().toUpperCase();
+        if (!ImportItemStatus.isKnown(normalizedStatus)) {
+            throw new IllegalArgumentException("Status must be one of: PENDING, PAID, CLEARED, HOLD.");
         }
         return normalizedStatus;
     }

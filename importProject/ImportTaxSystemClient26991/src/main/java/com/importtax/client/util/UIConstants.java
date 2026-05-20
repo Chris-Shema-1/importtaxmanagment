@@ -7,9 +7,11 @@ public class UIConstants {
 
     private UIConstants() {}
 
-    public static final String APP_NAME    = "Import Tax Management System";
-    public static final String APP_TITLE   = "Import Tax Client";
-    public static final String APP_VERSION = "1.0.0";
+    public static final String APP_NAME       = "Import Tax Management System";
+    public static final String APP_TITLE      = APP_NAME;
+    public static final String APP_VERSION    = "1.0.0";
+    public static final String STUDENT_ID     = "26991";
+    public static final String FOOTER_TAGLINE = APP_NAME + " — Distributed Java Application";
 
     // ── Primary blue ───────────────────────────────────────────────────────
     public static final Color PRIMARY_COLOR = new Color(0,   120, 215);
@@ -63,6 +65,7 @@ public class UIConstants {
     public static final String RMI_SERVICE_PAYMENT      = "paymentService";
     public static final String RMI_SERVICE_NOTIFICATION = "notificationService";
     public static final String RMI_SERVICE_OTP          = "otpService";
+    public static final String RMI_SERVICE_REPORT       = "reportService";
 
     // ── Helpers ────────────────────────────────────────────────────────────
     public static Color withAlpha(Color c, int alpha) {

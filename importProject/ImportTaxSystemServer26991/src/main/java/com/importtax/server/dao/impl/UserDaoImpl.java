@@ -50,4 +50,26 @@ public class UserDaoImpl extends GenericDaoImpl<User> implements UserDao {
             return query.getResultStream().findFirst();
         }, "findByEmail");
     }
+
+    @Override
+    public Optional<User> findByUsernameOrEmail(String usernameOrEmail) {
+        if (usernameOrEmail == null || usernameOrEmail.isBlank()) {
+            return Optional.empty();
+        }
+        String trimmed = usernameOrEmail.trim();
+        Optional<User> byUsername = findByUsername(trimmed);
+        if (byUsername.isPresent()) {
+            return byUsername;
+        }
+        if (trimmed.contains("@")) {
+            return findByEmail(trimmed);
+        }
+        return Optional.empty();
+    }
+
+    @Override
+    public long countUsers() {
+        return executeReadOnly(session -> session.createQuery(
+                "select count(u) from User u", Long.class).getSingleResult(), "countUsers");
+    }
 }

@@ -48,11 +48,11 @@
     </plugins>
   </build>
   <properties>
-    <maven.compiler.release>21</maven.compiler.release>
+    <maven.compiler.release>17</maven.compiler.release>
     <hibernate.version>6.6.3.Final</hibernate.version>
     <jakarta.persistence.version>3.1.0</jakarta.persistence.version>
     <slf4j.version>2.0.16</slf4j.version>
-    <postgresql.version>42.7.4</postgresql.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <mysql.version>8.0.33</mysql.version>
   </properties>
 </project>

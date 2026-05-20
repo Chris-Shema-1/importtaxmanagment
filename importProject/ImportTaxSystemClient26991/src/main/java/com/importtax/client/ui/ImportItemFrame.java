@@ -572,9 +572,10 @@ public class ImportItemFrame extends JFrame {
 
         private Color statusColor(String status) {
             return switch (status) {
-                case "APPROVED", "PAID", "CLEARED" -> UIConstants.SUCCESS_COLOR;
-                case "REJECTED", "HOLD" -> UIConstants.ERROR_COLOR;
                 case "PENDING" -> UIConstants.WARNING_COLOR;
+                case "PAID" -> UIConstants.INFO_COLOR;
+                case "APPROVED", "CLEARED" -> UIConstants.SUCCESS_COLOR;
+                case "REJECTED", "HOLD" -> UIConstants.ERROR_COLOR;
                 default -> UIConstants.TEXT_COLOR;
             };
         }

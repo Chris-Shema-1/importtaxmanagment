@@ -1,13 +1,12 @@
 package com.importtax.client.ui;
 
 import com.importtax.client.rmi.RmiConnection;
+import com.importtax.client.util.TableFormatUtil;
 import com.importtax.client.util.UIConstants;
-import com.importtax.server.model.ImportItem;
-import com.importtax.server.model.Invoice;
-import com.importtax.server.model.Payment;
-import com.importtax.server.rmi.ImportItemService;
-import com.importtax.server.rmi.InvoiceService;
-import com.importtax.server.rmi.PaymentService;
+import com.importtax.client.util.UserMessageUtil;
+import com.importtax.server.model.ReportSummary;
+import com.importtax.server.model.ReportTableRow;
+import com.importtax.server.rmi.ReportService;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
@@ -21,8 +20,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableModel;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -48,23 +50,28 @@ public class ReportsPage extends JPanel {
     private static final Logger logger = LoggerFactory.getLogger(ReportsPage.class);
 
     private final AppShell shell;
-    private ImportItemService importService;
-    private InvoiceService    invoiceService;
-    private PaymentService    paymentService;
+    private ReportService reportService;
 
     // stat labels
     private JLabel totalImportsVal, pendingImportsVal, clearedImportsVal;
     private JLabel totalInvoicesVal, totalTaxVal;
     private JLabel totalPaymentsVal, completedPaymentsVal, pendingPaymentsVal, totalPaidVal;
+    private JLabel totalsSummaryLabel;
     private JLabel statusLabel;
 
     // chart panels (replaced on each reload)
     private JPanel importChartHolder, paymentChartHolder, invoiceChartHolder;
 
-    // raw data kept for export
-    private List<ImportItem> lastImports;
-    private List<Invoice>    lastInvoices;
-    private List<Payment>    lastPayments;
+    private JTable reportTable;
+    private DefaultTableModel reportTableModel;
+
+    private ReportSummary lastSummary;
+    private List<ReportTableRow> lastReportRows;
+    private boolean dataLoaded;
+    private JButton refreshBtn;
+    private JButton exportCsvBtn;
+    private JButton exportPdfBtn;
+    private JLabel lastRefreshedLabel;
 
     public ReportsPage(AppShell shell) {
         this.shell = shell;
@@ -79,11 +86,9 @@ public class ReportsPage extends JPanel {
     private void initRmi() {
         try {
             RmiConnection.initialize();
-            importService  = RmiConnection.lookup(UIConstants.RMI_SERVICE_IMPORT);
-            invoiceService = RmiConnection.lookup(UIConstants.RMI_SERVICE_INVOICE);
-            paymentService = RmiConnection.lookup(UIConstants.RMI_SERVICE_PAYMENT);
+            reportService = RmiConnection.lookup(UIConstants.RMI_SERVICE_REPORT);
         } catch (RemoteException | NotBoundException e) {
-            logger.warn("Report services unavailable", e);
+            logger.warn("ReportService unavailable", e);
         }
     }
 
@@ -100,7 +105,7 @@ public class ReportsPage extends JPanel {
         JLabel title = new JLabel("Reports");
         title.setFont(new Font("Segoe UI", Font.BOLD, 24));
         title.setForeground(UIConstants.TEXT_COLOR);
-        JLabel sub = new JLabel("Live summary with charts — exportable to CSV");
+        JLabel sub = new JLabel("Live server aggregates, detail table, and exportable reports");
         sub.setFont(UIConstants.FONT_REGULAR);
         sub.setForeground(UIConstants.TEXT_SECONDARY);
 
@@ -109,16 +114,23 @@ public class ReportsPage extends JPanel {
         hdr.add(title, "span 4, wrap");
         hdr.add(sub, "grow");
 
-        var refreshBtn = TaxPage.btn("Refresh",       UIConstants.PRIMARY_COLOR);
-        var exportBtn  = TaxPage.btn("Export CSV",    UIConstants.SUCCESS_COLOR);
-        var pdfBtn     = TaxPage.btn("Export PDF",    new Color(192, 57, 43));
+        refreshBtn = TaxPage.btn("Refresh",       UIConstants.PRIMARY_COLOR);
+        exportCsvBtn  = TaxPage.btn("Export CSV",    UIConstants.SUCCESS_COLOR);
+        exportPdfBtn     = TaxPage.btn("Export PDF",    new Color(192, 57, 43));
         refreshBtn.addActionListener(e -> loadData());
-        exportBtn.addActionListener(e  -> exportCsv());
-        pdfBtn.addActionListener(e     -> exportPdf());
+        exportCsvBtn.addActionListener(e  -> exportCsv());
+        exportPdfBtn.addActionListener(e     -> exportPdf());
+        exportCsvBtn.setEnabled(false);
+        exportPdfBtn.setEnabled(false);
         hdr.add(refreshBtn, "h 38!, gapleft 8");
-        hdr.add(exportBtn,  "h 38!, gapleft 8");
-        hdr.add(pdfBtn,     "h 38!, gapleft 8");
-        root.add(hdr, "growx, wrap, gapbottom 24");
+        hdr.add(exportCsvBtn,  "h 38!, gapleft 8");
+        hdr.add(exportPdfBtn,     "h 38!, gapleft 8");
+        root.add(hdr, "growx, wrap");
+
+        lastRefreshedLabel = new JLabel("Not refreshed yet");
+        lastRefreshedLabel.setFont(UIConstants.FONT_SMALL);
+        lastRefreshedLabel.setForeground(UIConstants.TEXT_MUTED);
+        root.add(lastRefreshedLabel, "growx, wrap, gapbottom 24");
 
         // ── Import stat cards ──
         root.add(sectionLabel("Import Items"), "wrap, gapbottom 10");
@@ -172,7 +184,27 @@ public class ReportsPage extends JPanel {
         paymentChartHolder = new JPanel(new BorderLayout());
         paymentChartHolder.setOpaque(false);
         paymentChartHolder.setPreferredSize(new Dimension(0, 260));
-        root.add(paymentChartHolder, "growx, wrap, gapbottom 16");
+        root.add(paymentChartHolder, "growx, wrap, gapbottom 24");
+
+        root.add(sectionLabel("Report Detail"), "wrap, gapbottom 10");
+        reportTableModel = new DefaultTableModel(
+                new Object[]{"Invoice #", "Import Item", "User", "Amount", "Status", "Date"}, 0) {
+            public boolean isCellEditable(int r, int c) { return false; }
+        };
+        reportTable = TaxPage.styledTable(reportTableModel);
+        TableFormatUtil.applyCurrencyColumn(reportTable, 3);
+        TableFormatUtil.applyDateColumn(reportTable, 5);
+        reportTable.getColumnModel().getColumn(4).setCellRenderer(TableFormatUtil.statusRenderer());
+        reportTable.setAutoResizeMode(JTable.AUTO_RESIZE_SUBSEQUENT_COLUMNS);
+        int[] reportWidths = {120, 220, 140, 120, 110, 110};
+        for (int i = 0; i < reportWidths.length; i++)
+            reportTable.getColumnModel().getColumn(i).setPreferredWidth(reportWidths[i]);
+        root.add(TaxPage.styledScroll(reportTable), "growx, h 220!, wrap, gapbottom 8");
+
+        totalsSummaryLabel = new JLabel(" ");
+        totalsSummaryLabel.setFont(UIConstants.FONT_SMALL);
+        totalsSummaryLabel.setForeground(UIConstants.TEXT_SECONDARY);
+        root.add(totalsSummaryLabel, "growx, wrap, gapbottom 8");
 
         statusLabel = new JLabel(" ");
         statusLabel.setFont(UIConstants.FONT_SMALL);
@@ -185,84 +217,147 @@ public class ReportsPage extends JPanel {
         return wrapper;
     }
 
-    // ── Data loading ───────────────────────────────────────────────────────
+    // ── Data loading (server-side aggregation via ReportService) ───────────
     private void loadData() {
+        if (reportService == null) {
+            statusLabel.setText("Report service unavailable — start the server");
+            statusLabel.setForeground(UIConstants.ERROR_COLOR);
+            return;
+        }
+
         statusLabel.setText("Loading...");
         statusLabel.setForeground(UIConstants.INFO_COLOR);
+        shell.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        refreshBtn.setEnabled(false);
 
         new SwingWorker<Void, Void>() {
-            int totalImports, pending, cleared;
-            int totalInvoices;
-            BigDecimal totalTax = BigDecimal.ZERO;
-            int totalPayments, completed, pendingPay;
-            BigDecimal totalPaid = BigDecimal.ZERO;
+            ReportSummary summary;
+            long pending, paid, cleared, hold;
+            List<ReportTableRow> rows;
 
             protected Void doInBackground() throws Exception {
-                if (importService != null) {
-                    lastImports  = importService.findAllItems();
-                    totalImports = lastImports.size();
-                    pending  = (int) lastImports.stream().filter(i -> "PENDING".equalsIgnoreCase(i.getStatus())).count();
-                    cleared  = (int) lastImports.stream().filter(i -> "CLEARED".equalsIgnoreCase(i.getStatus())).count();
-                }
-                if (invoiceService != null) {
-                    lastInvoices  = invoiceService.findAll();
-                    totalInvoices = lastInvoices.size();
-                    totalTax = lastInvoices.stream().map(Invoice::getTotalTaxAmount)
-                        .filter(a -> a != null).reduce(BigDecimal.ZERO, BigDecimal::add);
-                }
-                if (paymentService != null) {
-                    lastPayments  = paymentService.findAll();
-                    totalPayments = lastPayments.size();
-                    completed  = (int) lastPayments.stream().filter(p -> "COMPLETED".equalsIgnoreCase(p.getPaymentStatus())).count();
-                    pendingPay = (int) lastPayments.stream().filter(p -> "PENDING".equalsIgnoreCase(p.getPaymentStatus())).count();
-                    totalPaid  = lastPayments.stream()
-                        .filter(p -> "COMPLETED".equalsIgnoreCase(p.getPaymentStatus()))
-                        .map(Payment::getAmountPaid).filter(a -> a != null)
-                        .reduce(BigDecimal.ZERO, BigDecimal::add);
-                }
+                summary = reportService.getDashboardSummary();
+                var counts = reportService.getImportStatusCounts();
+                pending = counts.getPending();
+                paid = counts.getPaid();
+                cleared = counts.getCleared();
+                hold = counts.getHold();
+                rows = reportService.getReportTableRows();
                 return null;
             }
 
             protected void done() {
+                shell.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                refreshBtn.setEnabled(true);
                 try {
                     get();
-                    totalImportsVal.setText(String.valueOf(totalImports));
-                    pendingImportsVal.setText(String.valueOf(pending));
-                    clearedImportsVal.setText(String.valueOf(cleared));
-                    totalInvoicesVal.setText(String.valueOf(totalInvoices));
-                    totalTaxVal.setText("$" + totalTax.toPlainString());
-                    totalPaymentsVal.setText(String.valueOf(totalPayments));
-                    completedPaymentsVal.setText(String.valueOf(completed));
-                    pendingPaymentsVal.setText(String.valueOf(pendingPay));
-                    totalPaidVal.setText("$" + totalPaid.toPlainString());
+                    lastSummary = summary;
+                    lastReportRows = rows;
+                    dataLoaded = summary != null;
+                    exportCsvBtn.setEnabled(dataLoaded);
+                    exportPdfBtn.setEnabled(dataLoaded);
 
-                    // build charts
-                    refreshChart(importChartHolder,  buildImportBarChart(pending, cleared, totalImports - pending - cleared));
-                    refreshChart(invoiceChartHolder,  buildInvoicePieChart(totalInvoices, totalTax));
-                    refreshChart(paymentChartHolder,  buildPaymentBarChart(completed, pendingPay, totalPayments - completed - pendingPay));
+                    if (summary != null) {
+                        totalImportsVal.setText(String.valueOf(summary.getTotalImports()));
+                        pendingImportsVal.setText(String.valueOf(summary.getPendingImports()));
+                        clearedImportsVal.setText(String.valueOf(summary.getClearedImports()));
+                        totalInvoicesVal.setText(String.valueOf(summary.getTotalInvoices()));
+                        totalTaxVal.setText(TableFormatUtil.formatCurrency(summary.getTotalTaxCollected()));
+                        totalPaymentsVal.setText(String.valueOf(summary.getTotalPayments()));
+                        completedPaymentsVal.setText(String.valueOf(summary.getCompletedPayments()));
+                        pendingPaymentsVal.setText(String.valueOf(summary.getPendingPayments()));
+                        totalPaidVal.setText(TableFormatUtil.formatCurrency(summary.getTotalRevenue()));
+                    }
 
-                    statusLabel.setText("Last updated just now");
+                    refreshChart(importChartHolder,
+                            buildImportBarChart((int) pending, (int) paid, (int) cleared, (int) hold, 0));
+                    refreshChart(invoiceChartHolder,
+                            buildInvoicePieChart(
+                                    summary != null ? (int) summary.getTotalInvoices() : 0,
+                                    summary != null ? summary.getTotalTaxCollected() : BigDecimal.ZERO));
+                    refreshChart(paymentChartHolder,
+                            buildPaymentBarChart(
+                                    summary != null ? (int) summary.getCompletedPayments() : 0,
+                                    summary != null ? (int) summary.getPendingPayments() : 0,
+                                    summary != null ? (int) Math.max(0,
+                                            summary.getTotalPayments()
+                                                    - summary.getCompletedPayments()
+                                                    - summary.getPendingPayments()) : 0));
+
+                    fillReportTable(rows);
+                    updateTotalsSummary(summary);
+
+                    String at = summary != null && summary.getGeneratedAt() != null
+                            ? summary.getGeneratedAt().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"))
+                            : LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+                    statusLabel.setText("Report data loaded");
                     statusLabel.setForeground(UIConstants.TEXT_MUTED);
+                    lastRefreshedLabel.setText("Last refreshed: " + at);
                 } catch (Exception ex) {
+                    logger.warn("Report load failed", ex);
+                    dataLoaded = false;
+                    exportCsvBtn.setEnabled(false);
+                    exportPdfBtn.setEnabled(false);
                     statusLabel.setText("Failed to load report data");
                     statusLabel.setForeground(UIConstants.ERROR_COLOR);
+                    lastRefreshedLabel.setText("Last refresh failed");
+                    JOptionPane.showMessageDialog(shell,
+                            UserMessageUtil.friendly(ex, "Could not load reports. Check the server connection."),
+                            UIConstants.APP_NAME, JOptionPane.ERROR_MESSAGE);
                 }
             }
         }.execute();
     }
 
+    private void fillReportTable(List<ReportTableRow> rows) {
+        reportTableModel.setRowCount(0);
+        if (rows == null || rows.isEmpty()) {
+            reportTableModel.addRow(new Object[]{
+                    "—", "No report data available", "—", null, "—", null
+            });
+            return;
+        }
+        for (ReportTableRow r : rows) {
+            reportTableModel.addRow(new Object[]{
+                    r.getInvoiceNumber(),
+                    r.getImportItemName(),
+                    r.getUserDisplay(),
+                    r.getAmount(),
+                    r.getStatus(),
+                    r.getRecordDate()
+            });
+        }
+    }
+
+    private void updateTotalsSummary(ReportSummary summary) {
+        if (summary == null) {
+            totalsSummaryLabel.setText(" ");
+            return;
+        }
+        totalsSummaryLabel.setText(String.format(
+                "Totals — Users: %d | Imports: %d | Invoices: %d | Tax: %s | Revenue: %s",
+                summary.getTotalUsers(),
+                summary.getTotalImports(),
+                summary.getTotalInvoices(),
+                TableFormatUtil.formatCurrency(summary.getTotalTaxCollected()),
+                TableFormatUtil.formatCurrency(summary.getTotalRevenue())));
+    }
+
     // ── Chart builders ─────────────────────────────────────────────────────
-    private JFreeChart buildImportBarChart(int pending, int cleared, int other) {
+    private JFreeChart buildImportBarChart(int pending, int paid, int cleared, int hold, int other) {
         DefaultCategoryDataset ds = new DefaultCategoryDataset();
         ds.addValue(pending, "Count", "Pending");
+        ds.addValue(paid,    "Count", "Paid");
         ds.addValue(cleared, "Count", "Cleared");
-        ds.addValue(other,   "Count", "Other");
+        ds.addValue(hold,    "Count", "Hold");
+        ds.addValue(other,  "Count", "Other");
 
         JFreeChart chart = ChartFactory.createBarChart(
             "Import Items by Status", null, "Count", ds,
             PlotOrientation.VERTICAL, false, true, false);
         styleBarChart(chart, new Color[]{
-            UIConstants.WARNING_COLOR, UIConstants.SUCCESS_COLOR, UIConstants.TEXT_MUTED});
+            UIConstants.WARNING_COLOR, UIConstants.INFO_COLOR, UIConstants.SUCCESS_COLOR,
+            UIConstants.ERROR_COLOR, UIConstants.TEXT_MUTED});
         return chart;
     }
 
@@ -326,6 +421,12 @@ public class ReportsPage extends JPanel {
 
     // ── PDF Export ─────────────────────────────────────────────────────────
     private void exportPdf() {
+        if (!dataLoaded) {
+            JOptionPane.showMessageDialog(shell,
+                    "Load report data before exporting.",
+                    UIConstants.APP_NAME, JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         JFileChooser fc = new JFileChooser();
         fc.setDialogTitle("Export Report as PDF");
         fc.setFileFilter(new FileNameExtensionFilter("PDF Files (*.pdf)", "pdf"));
@@ -348,93 +449,51 @@ public class ReportsPage extends JPanel {
                 com.itextpdf.text.Font headerFont  = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 9,
                     new BaseColor(255, 255, 255));
 
-                Paragraph mainTitle = new Paragraph("Import Tax Management System — Report", titleFont);
+                Paragraph mainTitle = new Paragraph(UIConstants.APP_NAME + " — Financial Report", titleFont);
                 mainTitle.setAlignment(Element.ALIGN_CENTER);
                 mainTitle.setSpacingAfter(4);
                 doc.add(mainTitle);
-                Paragraph date = new Paragraph("Generated: " + java.time.LocalDate.now(), bodyFont);
+                String generated = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                Paragraph date = new Paragraph("Generated: " + generated, bodyFont);
                 date.setAlignment(Element.ALIGN_CENTER);
-                date.setSpacingAfter(16);
+                date.setSpacingAfter(12);
                 doc.add(date);
 
-                // ── Import Items ──
-                doc.add(new Paragraph("Import Items", sectionFont));
-                doc.add(new Paragraph(" "));
-                if (lastImports != null && !lastImports.isEmpty()) {
-                    PdfPTable t = new PdfPTable(new float[]{1, 3, 2, 1, 2, 2, 2});
-                    t.setWidthPercentage(100);
-                    BaseColor hdrColor = new BaseColor(0, 100, 180);
-                    for (String h : new String[]{"ID", "Item Name", "Category", "Qty", "Unit Price", "Total Tax", "Status"}) {
-                        PdfPCell c = new PdfPCell(new Phrase(h, headerFont));
-                        c.setBackgroundColor(hdrColor);
-                        c.setPadding(5);
-                        t.addCell(c);
-                    }
-                    for (ImportItem i : lastImports) {
-                        t.addCell(cell(str(i.getItemId()), bodyFont));
-                        t.addCell(cell(str(i.getItemName()), bodyFont));
-                        t.addCell(cell(str(i.getCategory()), bodyFont));
-                        t.addCell(cell(str(i.getQuantity()), bodyFont));
-                        t.addCell(cell(str(i.getUnitPrice()), bodyFont));
-                        t.addCell(cell(str(i.getTotalTax()), bodyFont));
-                        t.addCell(cell(str(i.getStatus()), bodyFont));
-                    }
-                    doc.add(t);
-                } else {
-                    doc.add(new Paragraph("No import items.", bodyFont));
+                if (lastSummary != null) {
+                    doc.add(new Paragraph("Summary Totals", sectionFont));
+                    doc.add(new Paragraph(
+                            "Users: " + lastSummary.getTotalUsers()
+                                    + " | Imports: " + lastSummary.getTotalImports()
+                                    + " | Invoices: " + lastSummary.getTotalInvoices()
+                                    + " | Tax: " + TableFormatUtil.formatCurrency(lastSummary.getTotalTaxCollected())
+                                    + " | Revenue: " + TableFormatUtil.formatCurrency(lastSummary.getTotalRevenue()),
+                            bodyFont));
+                    doc.add(new Paragraph(" "));
                 }
 
+                doc.add(new Paragraph("Invoice Report Detail", sectionFont));
                 doc.add(new Paragraph(" "));
-
-                // ── Invoices ──
-                doc.add(new Paragraph("Invoices", sectionFont));
-                doc.add(new Paragraph(" "));
-                if (lastInvoices != null && !lastInvoices.isEmpty()) {
-                    PdfPTable t = new PdfPTable(new float[]{1, 3, 2, 2});
+                if (lastReportRows != null && !lastReportRows.isEmpty()) {
+                    PdfPTable t = new PdfPTable(new float[]{2, 3, 2, 2, 2, 2});
                     t.setWidthPercentage(100);
                     BaseColor hdrColor = new BaseColor(0, 100, 180);
-                    for (String h : new String[]{"ID", "Invoice #", "Total Tax", "Issue Date"}) {
+                    for (String h : new String[]{"Invoice #", "Import Item", "User", "Amount", "Status", "Date"}) {
                         PdfPCell c = new PdfPCell(new Phrase(h, headerFont));
                         c.setBackgroundColor(hdrColor);
                         c.setPadding(5);
                         t.addCell(c);
                     }
-                    for (Invoice i : lastInvoices) {
-                        t.addCell(cell(str(i.getInvoiceId()), bodyFont));
-                        t.addCell(cell(str(i.getInvoiceNumber()), bodyFont));
-                        t.addCell(cell(str(i.getTotalTaxAmount()), bodyFont));
-                        t.addCell(cell(str(i.getIssueDate()), bodyFont));
+                    for (ReportTableRow r : lastReportRows) {
+                        t.addCell(cell(str(r.getInvoiceNumber()), bodyFont));
+                        t.addCell(cell(str(r.getImportItemName()), bodyFont));
+                        t.addCell(cell(str(r.getUserDisplay()), bodyFont));
+                        t.addCell(cell(TableFormatUtil.formatCurrency(r.getAmount()), bodyFont));
+                        t.addCell(cell(str(r.getStatus()), bodyFont));
+                        t.addCell(cell(TableFormatUtil.formatDate(r.getRecordDate()), bodyFont));
                     }
                     doc.add(t);
                 } else {
-                    doc.add(new Paragraph("No invoices.", bodyFont));
-                }
-
-                doc.add(new Paragraph(" "));
-
-                // ── Payments ──
-                doc.add(new Paragraph("Payments", sectionFont));
-                doc.add(new Paragraph(" "));
-                if (lastPayments != null && !lastPayments.isEmpty()) {
-                    PdfPTable t = new PdfPTable(new float[]{1, 2, 2, 2, 2});
-                    t.setWidthPercentage(100);
-                    BaseColor hdrColor = new BaseColor(0, 100, 180);
-                    for (String h : new String[]{"ID", "Amount Paid", "Method", "Status", "Date"}) {
-                        PdfPCell c = new PdfPCell(new Phrase(h, headerFont));
-                        c.setBackgroundColor(hdrColor);
-                        c.setPadding(5);
-                        t.addCell(c);
-                    }
-                    for (Payment p : lastPayments) {
-                        t.addCell(cell(str(p.getPaymentId()), bodyFont));
-                        t.addCell(cell(str(p.getAmountPaid()), bodyFont));
-                        t.addCell(cell(str(p.getPaymentMethod()), bodyFont));
-                        t.addCell(cell(str(p.getPaymentStatus()), bodyFont));
-                        t.addCell(cell(str(p.getPaymentDate()), bodyFont));
-                    }
-                    doc.add(t);
-                } else {
-                    doc.add(new Paragraph("No payments.", bodyFont));
+                    doc.add(new Paragraph("No report rows available. Refresh reports first.", bodyFont));
                 }
 
                 doc.close();
@@ -447,8 +506,9 @@ public class ReportsPage extends JPanel {
                         "PDF exported to:\n" + finalFile.getAbsolutePath(),
                         "Export Successful", JOptionPane.INFORMATION_MESSAGE);
                 } catch (Exception ex) {
+                    logger.warn("PDF export failed", ex);
                     JOptionPane.showMessageDialog(shell,
-                        "PDF export failed: " + ex.getMessage(),
+                        "PDF export failed. Ensure report data is loaded and try again.",
                         "Export Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
@@ -466,45 +526,64 @@ public class ReportsPage extends JPanel {
 
     // ── CSV Export ─────────────────────────────────────────────────────────
     private void exportCsv() {
+        if (!dataLoaded) {
+            JOptionPane.showMessageDialog(shell,
+                    "Load report data before exporting.",
+                    UIConstants.APP_NAME, JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         JFileChooser fc = new JFileChooser();
         fc.setDialogTitle("Export Report as CSV");
         fc.setFileFilter(new FileNameExtensionFilter("CSV Files (*.csv)", "csv"));
         fc.setSelectedFile(new File("import_tax_report.csv"));
         if (fc.showSaveDialog(shell) != JFileChooser.APPROVE_OPTION) return;
 
-        File file = fc.getSelectedFile();
-        if (!file.getName().endsWith(".csv")) file = new File(file.getAbsolutePath() + ".csv");
+        File selected = fc.getSelectedFile();
+        if (!selected.getName().endsWith(".csv")) {
+            selected = new File(selected.getAbsolutePath() + ".csv");
+        }
+        final File exportFile = selected;
 
-        try (FileWriter fw = new FileWriter(file)) {
-            fw.write("=== IMPORT ITEMS ===\n");
-            fw.write("ID,Item Name,Category,Qty,Unit Price,Tax Rate,Total Tax,Importer,Country,Status,Date\n");
-            if (lastImports != null) {
-                for (ImportItem i : lastImports)
-                    fw.write(csv(i.getItemId(), i.getItemName(), i.getCategory(), i.getQuantity(),
-                        i.getUnitPrice(), i.getTaxRate(), i.getTotalTax(),
-                        i.getImporterName(), i.getCountryOfOrigin(), i.getStatus(), i.getImportDate()));
+        new SwingWorker<Void, Void>() {
+            protected Void doInBackground() throws Exception {
+                try (FileWriter fw = new FileWriter(exportFile)) {
+                    String generated = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                    fw.write(UIConstants.APP_NAME + " — Financial Report\n");
+                    fw.write("Generated," + generated + "\n\n");
+                    if (lastSummary != null) {
+                        fw.write("=== SUMMARY TOTALS ===\n");
+                        fw.write(csv("Users", lastSummary.getTotalUsers()));
+                        fw.write(csv("Imports", lastSummary.getTotalImports()));
+                        fw.write(csv("Invoices", lastSummary.getTotalInvoices()));
+                        fw.write(csv("Tax Collected", lastSummary.getTotalTaxCollected()));
+                        fw.write(csv("Revenue", lastSummary.getTotalRevenue()));
+                        fw.write("\n");
+                    }
+                    fw.write("=== REPORT DETAIL ===\n");
+                    fw.write("Invoice Number,Import Item,User,Amount,Status,Date\n");
+                    if (lastReportRows != null) {
+                        for (ReportTableRow r : lastReportRows) {
+                            fw.write(csv(r.getInvoiceNumber(), r.getImportItemName(), r.getUserDisplay(),
+                                    r.getAmount(), r.getStatus(), r.getRecordDate()));
+                        }
+                    }
+                }
+                return null;
             }
-            fw.write("\n=== INVOICES ===\n");
-            fw.write("ID,Invoice Number,Total Tax Amount,Issue Date\n");
-            if (lastInvoices != null) {
-                for (Invoice i : lastInvoices)
-                    fw.write(csv(i.getInvoiceId(), i.getInvoiceNumber(), i.getTotalTaxAmount(), i.getIssueDate()));
-            }
-            fw.write("\n=== PAYMENTS ===\n");
-            fw.write("ID,Amount Paid,Date,Method,Status,Invoice ID\n");
-            if (lastPayments != null) {
-                for (Payment p : lastPayments) {
-                    Long invId = p.getInvoice() != null ? p.getInvoice().getInvoiceId() : null;
-                    fw.write(csv(p.getPaymentId(), p.getAmountPaid(), p.getPaymentDate(),
-                        p.getPaymentMethod(), p.getPaymentStatus(), invId));
+
+            protected void done() {
+                try {
+                    get();
+                    JOptionPane.showMessageDialog(shell, "Report exported to:\n" + exportFile.getAbsolutePath(),
+                            "Export Successful", JOptionPane.INFORMATION_MESSAGE);
+                } catch (Exception ex) {
+                    logger.warn("CSV export failed", ex);
+                    JOptionPane.showMessageDialog(shell,
+                            "Export failed. Load report data and try again.",
+                            "Export Error", JOptionPane.ERROR_MESSAGE);
                 }
             }
-            JOptionPane.showMessageDialog(shell, "Report exported to:\n" + file.getAbsolutePath(),
-                "Export Successful", JOptionPane.INFORMATION_MESSAGE);
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(shell, "Export failed: " + ex.getMessage(),
-                "Export Error", JOptionPane.ERROR_MESSAGE);
-        }
+        }.execute();
     }
 
     private String csv(Object... values) {

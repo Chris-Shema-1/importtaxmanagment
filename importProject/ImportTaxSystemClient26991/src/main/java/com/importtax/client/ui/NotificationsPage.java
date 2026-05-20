@@ -2,6 +2,7 @@ package com.importtax.client.ui;
 
 import com.importtax.client.rmi.RmiConnection;
 import com.importtax.client.util.UIConstants;
+import com.importtax.client.util.UserMessageUtil;
 import com.importtax.server.model.Notification;
 import com.importtax.server.rmi.NotificationService;
 import java.awt.*;
@@ -9,6 +10,7 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import javax.swing.*;
@@ -25,7 +27,12 @@ public class NotificationsPage extends JPanel {
     private static final long serialVersionUID = 1L;
     private static final Logger logger = LoggerFactory.getLogger(NotificationsPage.class);
 
-    private static final String[] TYPES    = {"INFO", "WARNING", "ALERT", "SYSTEM"};
+    private static final String[] TYPES    = {
+        "INFO", "WARNING", "ALERT", "SYSTEM", "PAYMENT_CONFIRMED", "IMPORT_CLEARED"
+    };
+    private static final String[] TYPE_FILTER = {
+        "ALL", "INFO", "WARNING", "ALERT", "SYSTEM", "PAYMENT_CONFIRMED", "IMPORT_CLEARED", "OTP"
+    };
     private static final String[] STATUSES = {"UNREAD", "READ", "ARCHIVED"};
 
     private final AppShell shell;
@@ -34,6 +41,7 @@ public class NotificationsPage extends JPanel {
     private List<Notification> displayedItems = new ArrayList<>();
 
     private JTextField        searchField;
+    private JComboBox<String> typeFilterCombo;
     private JLabel            statusLabel;
     private JTable            table;
     private DefaultTableModel tableModel;
@@ -88,7 +96,7 @@ public class NotificationsPage extends JPanel {
         };
         card.setOpaque(false);
 
-        JPanel toolbar = new JPanel(new MigLayout("insets 0, fillx", "[grow][120!][90!][90!][90!]", "[40!]"));
+        JPanel toolbar = new JPanel(new MigLayout("insets 0, fillx", "[grow][150!][120!][90!][90!]", "[40!]"));
         toolbar.setOpaque(false);
         searchField = TaxPage.styledField("Search notifications...");
         searchField.getDocument().addDocumentListener(new DocumentListener() {
@@ -96,6 +104,8 @@ public class NotificationsPage extends JPanel {
             public void removeUpdate(DocumentEvent e)  { filter(); }
             public void changedUpdate(DocumentEvent e) { filter(); }
         });
+        typeFilterCombo = TaxPage.styledCombo(TYPE_FILTER);
+        typeFilterCombo.addActionListener(e -> filter());
         var addBtn     = TaxPage.btn("New Notification", UIConstants.PRIMARY_COLOR);
         var deleteBtn  = TaxPage.btn("Delete",           UIConstants.ERROR_COLOR);
         var refreshBtn = TaxPage.btn("Refresh",          UIConstants.BORDER_COLOR);
@@ -103,15 +113,39 @@ public class NotificationsPage extends JPanel {
         deleteBtn.addActionListener(e  -> deleteSelected());
         refreshBtn.addActionListener(e -> loadData());
         toolbar.add(searchField, "grow, h 40!");
+        toolbar.add(typeFilterCombo, "h 40!");
         toolbar.add(addBtn,    "h 40!");
         toolbar.add(deleteBtn, "h 40!");
         card.add(toolbar, "growx, wrap, gapbottom 12");
 
         tableModel = new DefaultTableModel(
-            new Object[]{"ID", "Type", "Recipient", "Message", "Sent At", "Status"}, 0) {
+            new Object[]{"Type", "Title", "Message", "Date", "Status"}, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
         table = TaxPage.styledTable(tableModel);
+
+        DefaultTableCellRenderer typeRenderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable t, Object v, boolean sel, boolean foc, int row, int col) {
+                super.getTableCellRendererComponent(t, v, sel, foc, row, col);
+                setBorder(new EmptyBorder(0, 12, 0, 12));
+                if (sel) {
+                    setBackground(UIConstants.PRIMARY_COLOR);
+                    setForeground(Color.WHITE);
+                    return this;
+                }
+                setBackground(row % 2 == 0 ? UIConstants.PANEL_COLOR : new Color(235, 238, 243));
+                String type = v == null ? "" : v.toString().toUpperCase(Locale.ROOT);
+                setForeground(switch (type) {
+                    case "PAYMENT_CONFIRMED" -> new Color(30, 120, 180);
+                    case "IMPORT_CLEARED"    -> UIConstants.SUCCESS_COLOR;
+                    case "OTP"               -> new Color(200, 120, 30);
+                    default                  -> UIConstants.TEXT_COLOR;
+                });
+                return this;
+            }
+        };
+        table.getColumnModel().getColumn(0).setCellRenderer(typeRenderer);
 
         DefaultTableCellRenderer statusRenderer = new DefaultTableCellRenderer() {
             public Component getTableCellRendererComponent(JTable t, Object v, boolean sel, boolean foc, int row, int col) {
@@ -130,10 +164,11 @@ public class NotificationsPage extends JPanel {
                 return this;
             }
         };
-        table.getColumnModel().getColumn(5).setCellRenderer(statusRenderer);
-        int[] widths = {60, 100, 160, 320, 120, 100};
+        table.getColumnModel().getColumn(4).setCellRenderer(statusRenderer);
+        int[] widths = {140, 160, 360, 110, 100};
         for (int i = 0; i < widths.length; i++)
             table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);
+        table.setAutoCreateRowSorter(true);
 
         card.add(TaxPage.styledScroll(table), "grow, wrap");
 
@@ -206,7 +241,9 @@ public class NotificationsPage extends JPanel {
             protected List<Notification> doInBackground() throws Exception { return notifService.findAll(); }
             protected void done() {
                 try { allItems = new ArrayList<>(get()); filter(); }
-                catch (Exception ex) { setStatus(rootMsg("Load failed", ex), UIConstants.ERROR_COLOR); }
+                catch (Exception ex) {
+                    setStatus(UserMessageUtil.friendly(ex, "Unable to load notifications."), UIConstants.ERROR_COLOR);
+                }
             }
         }.execute();
     }
@@ -218,23 +255,53 @@ public class NotificationsPage extends JPanel {
             protected Void doInBackground() throws Exception { fn.call(); return null; }
             protected void done() {
                 try { get(); if (dlg != null) dlg.dispose(); setStatus(success, UIConstants.SUCCESS_COLOR); loadData(); }
-                catch (Exception ex) { setStatus(rootMsg(success + " failed", ex), UIConstants.ERROR_COLOR); }
+                catch (Exception ex) {
+                    setStatus(UserMessageUtil.friendly(ex, "Unable to complete notification action."),
+                            UIConstants.ERROR_COLOR);
+                }
             }
         }.execute();
     }
 
     private void filter() {
         String term = searchField.getText().trim().toLowerCase(Locale.ROOT);
-        List<Notification> src = term.isEmpty() ? allItems : allItems.stream()
-            .filter(n -> contains(n.getRecipient(), term) || contains(n.getMessage(), term)
-                      || contains(n.getNotificationType(), term))
+        String typeFilter = typeFilterCombo != null
+                ? (String) typeFilterCombo.getSelectedItem() : "ALL";
+        List<Notification> src = allItems.stream()
+            .filter(n -> "ALL".equalsIgnoreCase(typeFilter)
+                    || typeFilter.equalsIgnoreCase(n.getNotificationType()))
+            .filter(n -> term.isEmpty() || contains(n.getRecipient(), term) || contains(n.getMessage(), term)
+                    || contains(n.getNotificationType(), term) || contains(titleFor(n), term))
+            .sorted(Comparator
+                    .comparing(Notification::getSentAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(Notification::getNotificationId, Comparator.nullsLast(Comparator.reverseOrder())))
             .toList();
         displayedItems = new ArrayList<>(src);
         tableModel.setRowCount(0);
         for (Notification n : src)
-            tableModel.addRow(new Object[]{n.getNotificationId(), n.getNotificationType(),
-                n.getRecipient(), n.getMessage(), n.getSentAt(), n.getStatus()});
+            tableModel.addRow(new Object[]{
+                n.getNotificationType(),
+                titleFor(n),
+                n.getMessage(),
+                n.getSentAt(),
+                n.getStatus()
+            });
         setStatus(src.size() + " record(s)", UIConstants.TEXT_SECONDARY);
+    }
+
+    private static String titleFor(Notification n) {
+        if (n == null || n.getNotificationType() == null) {
+            return "";
+        }
+        return switch (n.getNotificationType().toUpperCase(Locale.ROOT)) {
+            case "PAYMENT_CONFIRMED" -> "Payment Confirmed";
+            case "IMPORT_CLEARED"    -> "Import Cleared";
+            case "OTP"               -> "OTP Verification";
+            case "WARNING"           -> "Warning";
+            case "ALERT"             -> "Alert";
+            case "SYSTEM"            -> "System";
+            default                  -> n.getNotificationType();
+        };
     }
 
     private Notification selected() {

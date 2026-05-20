@@ -19,8 +19,9 @@ public class RmiConnection {
 
     private static final Logger logger = LoggerFactory.getLogger(RmiConnection.class);
 
-    private static final String RMI_HOST = "localhost";
-    private static final int RMI_PORT = 5000;
+    private static final String RMI_HOST = getSetting("importtax.rmi.host", "IMPORT_TAX_RMI_HOST", "localhost");
+    private static final int RMI_PORT = Integer.parseInt(
+            getSetting("importtax.rmi.port", "IMPORT_TAX_RMI_PORT", "5000"));
     private static final String RMI_URL = String.format("rmi://%s:%d/", RMI_HOST, RMI_PORT);
 
     private static Registry registry;
@@ -122,5 +123,13 @@ public class RmiConnection {
     public static synchronized void close() {
         registry = null;
         logger.info("RMI connection closed");
+    }
+
+    private static String getSetting(String systemPropertyKey, String environmentKey, String defaultValue) {
+        String value = System.getProperty(systemPropertyKey);
+        if (value == null || value.isBlank()) {
+            value = System.getenv(environmentKey);
+        }
+        return (value == null || value.isBlank()) ? defaultValue : value;
     }
 }

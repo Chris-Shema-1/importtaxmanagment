@@ -43,6 +43,9 @@ public class User implements Serializable {
     @Column(name = "created_at", nullable = false)
     private LocalDate createdAt;
 
+    @Column(name = "status", nullable = false, length = 20)
+    private String status = "ACTIVE";
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ImportItem> importItems = new ArrayList<>();
 
@@ -56,6 +59,12 @@ public class User implements Serializable {
         this.password = password;
         this.role = role;
         this.createdAt = createdAt;
+        this.status = "ACTIVE";
+    }
+
+    public User(String fullName, String email, String username, String password, String role, LocalDate createdAt, String status) {
+        this(fullName, email, username, password, role, createdAt);
+        this.status = status;
     }
 
     public Long getUserId() {
@@ -114,6 +123,14 @@ public class User implements Serializable {
         this.createdAt = createdAt;
     }
 
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public List<ImportItem> getImportItems() {
         return importItems;
     }
@@ -140,7 +157,6 @@ public class User implements Serializable {
                 + ", email='" + email + '\''
                 + ", username='" + username + '\''
                 + ", role='" + role + '\''
-                + ", createdAt=" + createdAt
-                + '}';
+                + ", createdAt=" + createdAt                + ", status='" + status + '\''                 + '}';
     }
 }

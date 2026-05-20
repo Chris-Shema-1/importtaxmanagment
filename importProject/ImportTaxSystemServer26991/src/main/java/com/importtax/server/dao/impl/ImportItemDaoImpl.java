@@ -99,4 +99,29 @@ public class ImportItemDaoImpl extends GenericDaoImpl<ImportItem> implements Imp
             return query.getResultList();
         }, "searchByItemName");
     }
+
+    @Override
+    public long countAllItems() {
+        return executeReadOnly(session -> session.createQuery(
+                "select count(i) from ImportItem i", Long.class).getSingleResult(), "countAllItems");
+    }
+
+    @Override
+    public long countByStatus(String status) {
+        return executeReadOnly(session -> session.createQuery(
+                        "select count(i) from ImportItem i where upper(i.status) = upper(:status)", Long.class)
+                .setParameter("status", status)
+                .getSingleResult(), "countByStatus");
+    }
+
+    @Override
+    public List<ImportItem> findRecentItems(int limit) {
+        int max = Math.max(1, Math.min(limit, 20));
+        return executeReadOnly(session -> session.createQuery(
+                        "select i from ImportItem i left join fetch i.user "
+                                + "order by i.importDate desc, i.itemId desc",
+                        ImportItem.class)
+                .setMaxResults(max)
+                .getResultList(), "findRecentItems");
+    }
 }

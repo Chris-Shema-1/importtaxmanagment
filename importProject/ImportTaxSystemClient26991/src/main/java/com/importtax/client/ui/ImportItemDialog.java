@@ -34,7 +34,7 @@ import net.miginfocom.swing.MigLayout;
 public class ImportItemDialog extends JDialog {
 
     private static final long serialVersionUID = 1L;
-    private static final String[] STATUSES = {"PENDING", "CLEARED", "HOLD"};
+    private static final String[] STATUSES = {"PENDING", "PAID", "CLEARED", "HOLD"};
 
     private final ImportItem editingItem;
 
@@ -60,7 +60,7 @@ public class ImportItemDialog extends JDialog {
     }
 
     public ImportItemDialog(JFrame owner, ImportItem item) {
-        super(owner, item == null ? "Add New Import" : "Edit Import Item", true);
+        super(owner, item == null ? "Add New Import" : "Edit Import Item — " + UIConstants.APP_NAME, true);
         this.editingItem = item;
         initializeDialog(owner);
         setContentPane(createContentPanel());
@@ -296,8 +296,23 @@ public class ImportItemDialog extends JDialog {
         item.setDescription(descriptionArea.getText().trim());
         item.setQuantity(parseInteger(quantityField.getText(), "Quantity"));
         item.setUnitPrice(parseDecimal(unitPriceField.getText(), "Unit Price"));
-        item.setCountryOfOrigin(countryField.getText().trim());
-        item.setImporterName(required(importerNameField, "Importer Name"));
+        String country = countryField.getText().trim();
+        if (country.isEmpty()) {
+            throw new IllegalArgumentException("Country of origin is required");
+        }
+        item.setCountryOfOrigin(country);
+        String importer = required(importerNameField, "Importer name");
+        if (importer.length() < 3) {
+            throw new IllegalArgumentException("Importer name must be at least 3 characters");
+        }
+        item.setImporterName(importer);
+        String name = item.getItemName();
+        if (name.length() < 3) {
+            throw new IllegalArgumentException("Item name must be at least 3 characters");
+        }
+        if ("Select Category".equalsIgnoreCase(item.getCategory())) {
+            throw new IllegalArgumentException("Please select a valid category");
+        }
         item.setTaxRate(parseDecimal(taxRateField.getText(), "Tax Rate"));
         item.setImportDate(parseDate(importDateField.getText()));
         item.setStatus((String) statusComboBox.getSelectedItem());
@@ -391,7 +406,11 @@ public class ImportItemDialog extends JDialog {
 
     private LocalDate parseDate(String value) {
         try {
-            return LocalDate.parse(value.trim());
+            LocalDate d = LocalDate.parse(value.trim());
+            if (d.isAfter(LocalDate.now())) {
+                throw new IllegalArgumentException("Import date cannot be in the future.");
+            }
+            return d;
         } catch (DateTimeParseException ex) {
             throw new IllegalArgumentException("Import Date must use yyyy-MM-dd format");
         }

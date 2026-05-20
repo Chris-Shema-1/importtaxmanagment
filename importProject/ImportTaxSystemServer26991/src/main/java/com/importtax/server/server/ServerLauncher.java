@@ -8,6 +8,7 @@ import com.importtax.server.rmi.impl.InvoiceServiceImpl;
 import com.importtax.server.rmi.impl.NotificationServiceImpl;
 import com.importtax.server.rmi.impl.OtpServiceImpl;
 import com.importtax.server.rmi.impl.PaymentServiceImpl;
+import com.importtax.server.rmi.impl.ReportServiceImpl;
 import com.importtax.server.rmi.impl.TaxServiceImpl;
 import com.importtax.server.rmi.impl.UserServiceImpl;
 import com.importtax.server.util.HibernateUtil;
@@ -47,6 +48,7 @@ public final class ServerLauncher {
             LOGGER.info("  rmi://{}:{}/paymentService",      HOST, ServerConfig.RMI_REGISTRY_PORT);
             LOGGER.info("  rmi://{}:{}/notificationService", HOST, ServerConfig.RMI_REGISTRY_PORT);
             LOGGER.info("  rmi://{}:{}/otpService",          HOST, ServerConfig.RMI_REGISTRY_PORT);
+            LOGGER.info("  rmi://{}:{}/reportService",       HOST, ServerConfig.RMI_REGISTRY_PORT);
         } catch (Exception exception) {
             LOGGER.error("Failed to start {} RMI server.", ServerConfig.APPLICATION_NAME, exception);
             HibernateUtil.shutdown();
@@ -73,6 +75,7 @@ public final class ServerLauncher {
         bind("paymentService",      new PaymentServiceImpl());
         bind("notificationService", new NotificationServiceImpl());
         bind("otpService",          new OtpServiceImpl());
+        bind("reportService",       new ReportServiceImpl());
     }
 
     private static void bind(String serviceName, Remote service) throws Exception {

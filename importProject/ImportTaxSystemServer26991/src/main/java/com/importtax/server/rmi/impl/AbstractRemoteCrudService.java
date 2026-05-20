@@ -2,6 +2,7 @@ package com.importtax.server.rmi.impl;
 
 import com.importtax.server.dao.GenericDao;
 import com.importtax.server.rmi.RemoteCrudService;
+import com.importtax.server.util.RemoteMessages;
 import org.slf4j.Logger;
 
 import java.rmi.RemoteException;
@@ -57,9 +58,13 @@ public abstract class AbstractRemoteCrudService<T> extends UnicastRemoteObject i
             R result = operation.get();
             logger.debug("{} operation '{}' completed.", serviceName, operationName);
             return result;
+        } catch (IllegalArgumentException exception) {
+            logger.warn("{} operation '{}' rejected: {}", serviceName, operationName, exception.getMessage());
+            throw new RemoteException(exception.getMessage() != null
+                    ? exception.getMessage() : "Invalid request.");
         } catch (RuntimeException exception) {
             logger.error("{} operation '{}' failed.", serviceName, operationName, exception);
-            throw new RemoteException(serviceName + " operation '" + operationName + "' failed.", exception);
+            throw RemoteMessages.toRemoteException(operationName, exception);
         }
     }
 }

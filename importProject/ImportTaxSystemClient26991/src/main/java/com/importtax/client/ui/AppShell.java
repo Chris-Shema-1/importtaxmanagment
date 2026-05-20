@@ -75,10 +75,23 @@ public class AppShell extends JFrame {
         root.setBackground(UIConstants.BACKGROUND_COLOR);
         root.add(buildSidebar(), BorderLayout.WEST);
         root.add(buildMain(),    BorderLayout.CENTER);
+        setJMenuBar(buildMenuBar());
         setContentPane(root);
 
         navigate(PAGE_DASHBOARD);
         startClock();
+    }
+
+    private JMenuBar buildMenuBar() {
+        JMenuBar bar = new JMenuBar();
+        JMenu help = new JMenu("Help");
+        help.setFont(UIConstants.FONT_REGULAR);
+        JMenuItem about = new JMenuItem("About System");
+        about.setFont(UIConstants.FONT_REGULAR);
+        about.addActionListener(e -> AboutDialog.show(this));
+        help.add(about);
+        bar.add(help);
+        return bar;
     }
 
     // ── Navigation ─────────────────────────────────────────────────────────
@@ -88,6 +101,7 @@ public class AppShell extends JFrame {
         cardLayout.show(cardPanel, page);
         if (sidebarPanel != null) sidebarPanel.repaint();
         switch (page) {
+            case PAGE_DASHBOARD     -> dashboardPage.reload();
             case PAGE_IMPORTS       -> importItemPage.reload();
             case PAGE_USERS         -> usersPage.reload();
             case PAGE_TAXES         -> taxPage.reload();

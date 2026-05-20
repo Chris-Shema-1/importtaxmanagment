@@ -26,4 +26,10 @@ public interface ImportItemDao extends GenericDao<ImportItem> {
     List<ImportItem> findByStatus(String status);
 
     List<ImportItem> searchByItemName(String itemName);
+
+    long countAllItems();
+
+    long countByStatus(String status);
+
+    List<ImportItem> findRecentItems(int limit);
 }

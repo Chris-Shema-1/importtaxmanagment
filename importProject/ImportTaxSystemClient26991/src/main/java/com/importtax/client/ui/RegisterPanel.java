@@ -421,9 +421,9 @@ public class RegisterPanel extends JPanel {
         User user = new User(fullName, email, username, password, role.name());
 
         // Step 1: verify OTP before creating the account
-        OtpVerificationDialog otpDlg = new OtpVerificationDialog(
+        OtpVerificationDialog otpDlg = OtpVerificationDialog.forRegistration(
             (java.awt.Frame) SwingUtilities.getWindowAncestor(RegisterPanel.this),
-            username);
+            username, email);
         otpDlg.setVisible(true);
         if (!otpDlg.isVerified()) {
             setLoading(false);

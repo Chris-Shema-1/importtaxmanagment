@@ -7,6 +7,8 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 
@@ -34,6 +36,10 @@ public class Invoice implements Serializable {
     @Column(name = "issue_date", nullable = false)
     private LocalDate issueDate;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "item_id")
+    private ImportItem importItem;
+
     @OneToOne(mappedBy = "invoice", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
     private Payment payment;
 
@@ -44,6 +50,11 @@ public class Invoice implements Serializable {
         this.invoiceNumber = invoiceNumber;
         this.totalTaxAmount = totalTaxAmount;
         this.issueDate = issueDate;
+    }
+
+    public Invoice(String invoiceNumber, BigDecimal totalTaxAmount, LocalDate issueDate, ImportItem importItem) {
+        this(invoiceNumber, totalTaxAmount, issueDate);
+        this.importItem = importItem;
     }
 
     public Long getInvoiceId() {
@@ -78,6 +89,14 @@ public class Invoice implements Serializable {
         this.issueDate = issueDate;
     }
 
+    public ImportItem getImportItem() {
+        return importItem;
+    }
+
+    public void setImportItem(ImportItem importItem) {
+        this.importItem = importItem;
+    }
+
     public Payment getPayment() {
         return payment;
     }
@@ -92,11 +111,13 @@ public class Invoice implements Serializable {
     @Override
     public String toString() {
         Long paymentId = payment != null ? payment.getPaymentId() : null;
+        Long itemId = importItem != null ? importItem.getItemId() : null;
         return "Invoice{"
                 + "invoiceId=" + invoiceId
-                + ", invoiceNumber='" + invoiceNumber + '\''
+                + ", invoiceNumber='" + invoiceNumber + '\'' 
                 + ", totalTaxAmount=" + totalTaxAmount
                 + ", issueDate=" + issueDate
+                + ", itemId=" + itemId
                 + ", paymentId=" + paymentId
                 + '}';
     }

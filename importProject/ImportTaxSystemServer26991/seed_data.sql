@@ -1,16 +1,18 @@
 -- ============================================================
--- SEED DATA — import_tax_management_system_db (PostgreSQL)
+-- SEED DATA — import_tax_management_system_db (MySQL)
 -- Run this AFTER the server has started once (so hbm2ddl
 -- creates all tables), or after running the schema manually.
 -- ============================================================
 
 -- Clear existing data (order respects FK constraints)
-TRUNCATE TABLE payments    RESTART IDENTITY CASCADE;
-TRUNCATE TABLE invoices    RESTART IDENTITY CASCADE;
-TRUNCATE TABLE import_items RESTART IDENTITY CASCADE;
-TRUNCATE TABLE taxes       RESTART IDENTITY CASCADE;
-TRUNCATE TABLE notifications RESTART IDENTITY CASCADE;
-TRUNCATE TABLE users       RESTART IDENTITY CASCADE;
+SET FOREIGN_KEY_CHECKS = 0;
+TRUNCATE TABLE payments;
+TRUNCATE TABLE invoices;
+TRUNCATE TABLE import_items;
+TRUNCATE TABLE taxes;
+TRUNCATE TABLE notifications;
+TRUNCATE TABLE users;
+SET FOREIGN_KEY_CHECKS = 1;
 
 -- ── USERS ──────────────────────────────────────────────────
 -- Passwords are stored as plain text (matching app behaviour)

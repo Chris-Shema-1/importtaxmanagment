@@ -5,6 +5,7 @@ import com.importtax.client.util.RoundedButton;
 import com.importtax.client.util.CurrentSession;
 import com.importtax.client.util.UIConstants;
 import com.importtax.server.model.User;
+import com.importtax.server.rmi.OtpService;
 import com.importtax.server.rmi.UserService;
 import java.awt.*;
 import java.awt.event.*;
@@ -31,6 +32,7 @@ public class LoginFrame extends JFrame {
     private JLabel         statusLabel;
     private JLabel         dateTimeLabel;
     private UserService    userService;
+    private OtpService     otpService;
 
     public LoginFrame() { this(null); }
 
@@ -50,9 +52,11 @@ public class LoginFrame extends JFrame {
         try {
             RmiConnection.initialize();
             userService = RmiConnection.lookup(UIConstants.RMI_SERVICE_USER);
+            otpService = RmiConnection.lookup(UIConstants.RMI_SERVICE_OTP);
         } catch (RemoteException | NotBoundException e) {
-            logger.warn("UserService unavailable", e);
+            logger.warn("RMI login services unavailable", e);
             userService = null;
+            otpService = null;
         }
     }
 
@@ -340,38 +344,89 @@ public class LoginFrame extends JFrame {
         if (password.isEmpty()) {
             showError("Please enter your password"); passwordField.requestFocus(); return;
         }
-        if (userService == null) {
-            showError("Login service unavailable — start the RMI server first."); return;
+        if (userService == null || otpService == null) {
+            showError("Login service unavailable — start the RMI server first.");
+            return;
         }
-        setLoading(true);
+        loginButton.setEnabled(false);
+        setLoading(true, "Authenticating…");
         new SwingWorker<User, Void>() {
             @Override protected User doInBackground() throws Exception {
                 return userService.authenticateUser(username, password);
             }
             @Override protected void done() {
-                setLoading(false);
                 try {
                     User u = get();
-                    if (u == null) { showAuthError(); return; }
-                    logger.info("Authenticated: id={}, username={}", u.getUserId(), u.getUsername());
-                    CurrentSession.setLoggedInUser(u);
-                    showSuccess("Welcome, " + u.getUsername());
-                    new DashboardFrame(u.getUsername()).setVisible(true);
-                    dispose();
+                    if (u == null) {
+                        setLoading(false, " ");
+                        showAuthError();
+                        return;
+                    }
+                    logger.info("Credentials accepted for username={}", u.getUsername());
+                    proceedWithOtp(u);
                 } catch (Exception ex) {
+                    setLoading(false, " ");
                     Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
-                    if (findCause(cause, IllegalArgumentException.class) != null) showAuthError();
-                    else showError("Login service unavailable — start the RMI server first.");
+                    if (findCause(cause, IllegalArgumentException.class) != null) {
+                        showAuthError();
+                        JOptionPane.showMessageDialog(LoginFrame.this,
+                                "Invalid username or password.",
+                                UIConstants.APP_NAME,
+                                JOptionPane.ERROR_MESSAGE);
+                    } else {
+                        showError("Login service unavailable — start the RMI server first.");
+                    }
                 }
             }
         }.execute();
     }
 
-    private void setLoading(boolean loading) {
+    private void proceedWithOtp(User authenticatedUser) {
+        String username = authenticatedUser.getUsername();
+        setLoading(true, "Sending OTP to your email…");
+        new SwingWorker<Boolean, Void>() {
+            @Override protected Boolean doInBackground() throws Exception {
+                return otpService.sendLoginOtp(username);
+            }
+            @Override protected void done() {
+                setLoading(false, " ");
+                try {
+                    if (!Boolean.TRUE.equals(get())) {
+                        JOptionPane.showMessageDialog(LoginFrame.this,
+                                "Could not send OTP to your registered email. Contact an administrator.",
+                                "OTP Delivery Failed", JOptionPane.ERROR_MESSAGE);
+                        return;
+                    }
+                    JOptionPane.showMessageDialog(LoginFrame.this,
+                            "OTP code sent to your email.",
+                            "OTP Sent", JOptionPane.INFORMATION_MESSAGE);
+
+                    OtpVerificationDialog otpDlg = OtpVerificationDialog.forLogin(LoginFrame.this, username);
+                    otpDlg.setVisible(true);
+                    if (!otpDlg.isVerified()) {
+                        showError("Sign-in cancelled — OTP not verified.");
+                        return;
+                    }
+
+                    CurrentSession.setLoggedInUser(authenticatedUser);
+                    logger.info("OTP verified; opening dashboard for username={}", username);
+                    new AppShell(username).setVisible(true);
+                    dispose();
+                } catch (Exception ex) {
+                    logger.warn("Failed to send login OTP", ex);
+                    JOptionPane.showMessageDialog(LoginFrame.this,
+                            "Failed to send OTP. Check the server connection and try again.",
+                            "OTP Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }.execute();
+    }
+
+    private void setLoading(boolean loading, String message) {
         loginButton.setEnabled(!loading);
         createAccountButton.setEnabled(!loading);
         setCursor(Cursor.getPredefinedCursor(loading ? Cursor.WAIT_CURSOR : Cursor.DEFAULT_CURSOR));
-        statusLabel.setText(loading ? "Authenticating…" : " ");
+        statusLabel.setText(loading ? message : " ");
         statusLabel.setForeground(loading ? UIConstants.INFO_COLOR : UIConstants.ERROR_COLOR);
     }
 

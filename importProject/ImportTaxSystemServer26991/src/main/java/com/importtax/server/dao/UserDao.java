@@ -11,4 +11,9 @@ public interface UserDao extends GenericDao<User> {
     Optional<User> findByUsername(String username);
 
     Optional<User> findByEmail(String email);
+
+    /** Resolve account by username or email address (case-insensitive email). */
+    Optional<User> findByUsernameOrEmail(String usernameOrEmail);
+
+    long countUsers();
 }

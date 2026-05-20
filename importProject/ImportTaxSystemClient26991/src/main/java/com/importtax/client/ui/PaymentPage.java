@@ -1,6 +1,8 @@
 package com.importtax.client.ui;
 
 import com.importtax.client.rmi.RmiConnection;
+import com.importtax.client.util.TableFormatUtil;
+import com.importtax.client.util.UserMessageUtil;
 import com.importtax.client.util.UIConstants;
 import com.importtax.server.model.Invoice;
 import com.importtax.server.model.Payment;
@@ -38,7 +40,10 @@ public class PaymentPage extends JPanel {
     private List<Payment> allItems       = new ArrayList<>();
     private List<Payment> displayedItems = new ArrayList<>();
 
+    private static final String[] PAYMENT_STATUS_FILTER = {"ALL", "PENDING", "COMPLETED", "FAILED", "REFUNDED"};
+
     private JTextField        searchField;
+    private JComboBox<String> statusFilterCombo;
     private JLabel            statusLabel;
     private JTable            table;
     private DefaultTableModel tableModel;
@@ -94,14 +99,17 @@ public class PaymentPage extends JPanel {
         };
         card.setOpaque(false);
 
-        JPanel toolbar = new JPanel(new MigLayout("insets 0, fillx", "[grow][110!][90!][90!][90!]", "[40!]"));
+        JPanel toolbar = new JPanel(new MigLayout("insets 0, fillx",
+                "[grow][130!][110!][90!][90!][90!]", "[40!]"));
         toolbar.setOpaque(false);
-        searchField = TaxPage.styledField("Search payments...");
+        searchField = TaxPage.styledField("Search invoice #, method, status...");
         searchField.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e)  { filter(); }
             public void removeUpdate(DocumentEvent e)  { filter(); }
             public void changedUpdate(DocumentEvent e) { filter(); }
         });
+        statusFilterCombo = styledCombo(PAYMENT_STATUS_FILTER);
+        statusFilterCombo.addActionListener(e -> filter());
         var addBtn     = TaxPage.btn("New Payment", UIConstants.PRIMARY_COLOR);
         var editBtn    = TaxPage.btn("Edit",        UIConstants.INFO_COLOR);
         var deleteBtn  = TaxPage.btn("Delete",      UIConstants.ERROR_COLOR);
@@ -111,6 +119,7 @@ public class PaymentPage extends JPanel {
         deleteBtn.addActionListener(e  -> deleteSelected());
         refreshBtn.addActionListener(e -> loadData());
         toolbar.add(searchField, "grow, h 40!");
+        toolbar.add(statusFilterCombo, "h 40!");
         toolbar.add(addBtn,    "h 40!");
         toolbar.add(editBtn,   "h 40!");
         toolbar.add(deleteBtn, "h 40!");
@@ -121,26 +130,9 @@ public class PaymentPage extends JPanel {
             public boolean isCellEditable(int r, int c) { return false; }
         };
         table = TaxPage.styledTable(tableModel);
-
-        // status color renderer
-        DefaultTableCellRenderer statusRenderer = new DefaultTableCellRenderer() {
-            public Component getTableCellRendererComponent(JTable t, Object v, boolean sel, boolean foc, int row, int col) {
-                super.getTableCellRendererComponent(t, v, sel, foc, row, col);
-                setBorder(new EmptyBorder(0, 12, 0, 12));
-                setHorizontalAlignment(CENTER);
-                String s = v == null ? "" : v.toString().toUpperCase(Locale.ROOT);
-                if (sel) { setBackground(UIConstants.PRIMARY_COLOR); setForeground(Color.WHITE); return this; }
-                setBackground(row % 2 == 0 ? UIConstants.PANEL_COLOR : new Color(235, 238, 243));
-                setForeground(switch (s) {
-                    case "COMPLETED" -> UIConstants.SUCCESS_COLOR;
-                    case "FAILED"    -> UIConstants.ERROR_COLOR;
-                    case "PENDING"   -> UIConstants.WARNING_COLOR;
-                    default          -> UIConstants.TEXT_COLOR;
-                });
-                return this;
-            }
-        };
-        table.getColumnModel().getColumn(4).setCellRenderer(statusRenderer);
+        TableFormatUtil.applyCurrencyColumn(table, 1);
+        TableFormatUtil.applyDateColumn(table, 2);
+        table.getColumnModel().getColumn(4).setCellRenderer(TableFormatUtil.statusRenderer());
         table.addMouseListener(new java.awt.event.MouseAdapter() {
             public void mouseClicked(java.awt.event.MouseEvent e) {
                 if (e.getClickCount() == 2) openEdit();
@@ -250,7 +242,8 @@ public class PaymentPage extends JPanel {
             LocalDate date;
             try { amt = new BigDecimal(amtStr); } catch (NumberFormatException ex) { errLabel.setText("Amount must be a number"); return; }
             try { date = LocalDate.parse(dateStr); } catch (DateTimeParseException ex) { errLabel.setText("Date must be yyyy-MM-dd"); return; }
-            mutate(dlg, existing == null ? "Saving..." : "Updating...", () -> {
+            boolean completed = "COMPLETED".equalsIgnoreCase(status);
+            mutate(dlg, save, cancel, existing == null ? "Saving..." : "Updating...", () -> {
                 Payment p = existing != null ? existing : new Payment();
                 p.setAmountPaid(amt);
                 p.setPaymentDate(date);
@@ -258,7 +251,7 @@ public class PaymentPage extends JPanel {
                 p.setPaymentStatus(status);
                 p.setInvoice(selInv);
                 if (existing == null) paymentService.save(p); else paymentService.update(p);
-            }, existing == null ? "Payment saved" : "Payment updated");
+            }, existing == null ? "Payment saved" : "Payment updated", completed);
         });
         btns.add(new JLabel(), "grow");
         btns.add(cancel, "h 42!");
@@ -274,9 +267,10 @@ public class PaymentPage extends JPanel {
         Payment sel = selected();
         if (sel == null) { setStatus("Select a payment to delete", UIConstants.WARNING_COLOR); return; }
         int ok = JOptionPane.showConfirmDialog(shell,
-            "Delete payment #" + sel.getPaymentId() + "?", "Confirm", JOptionPane.YES_NO_OPTION);
+            "Delete payment #" + sel.getPaymentId() + "? This cannot be undone.",
+            "Confirm Delete", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (ok != JOptionPane.YES_OPTION) return;
-        mutate(null, "Deleting...", () -> paymentService.delete(sel), "Payment deleted");
+        mutate(null, null, null, "Deleting...", () -> paymentService.delete(sel), "Payment deleted");
     }
 
     private void loadData() {
@@ -286,27 +280,67 @@ public class PaymentPage extends JPanel {
             protected List<Payment> doInBackground() throws Exception { return paymentService.findAll(); }
             protected void done() {
                 try { allItems = new ArrayList<>(get()); filter(); }
-                catch (Exception ex) { setStatus(rootMsg("Load failed", ex), UIConstants.ERROR_COLOR); }
+                catch (Exception ex) {
+                    setStatus(UserMessageUtil.friendly(ex, "Unable to load payments."), UIConstants.ERROR_COLOR);
+                }
             }
         }.execute();
     }
 
-    private void mutate(JDialog dlg, String msg, TaxPage.Callable fn, String success) {
+    private void mutate(JDialog dlg, JButton saveBtn, JButton cancelBtn, String msg, TaxPage.Callable fn, String success) {
+        mutate(dlg, saveBtn, cancelBtn, msg, fn, success, false);
+    }
+
+    private void mutate(JDialog dlg, JButton saveBtn, JButton cancelBtn, String msg, TaxPage.Callable fn,
+                        String success, boolean showPaymentSuccess) {
         if (!svcOk()) return;
+        if (saveBtn != null) saveBtn.setEnabled(false);
+        if (cancelBtn != null) cancelBtn.setEnabled(false);
+        shell.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        if (dlg != null) dlg.setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
         setStatus(msg, UIConstants.INFO_COLOR);
         new SwingWorker<Void, Void>() {
-            protected Void doInBackground() throws Exception { fn.call(); return null; }
+            protected Void doInBackground() throws Exception {
+                fn.call();
+                return null;
+            }
             protected void done() {
-                try { get(); if (dlg != null) dlg.dispose(); setStatus(success, UIConstants.SUCCESS_COLOR); loadData(); }
-                catch (Exception ex) { setStatus(rootMsg(success + " failed", ex), UIConstants.ERROR_COLOR); }
+                shell.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                if (dlg != null) dlg.setCursor(Cursor.getPredefinedCursor(Cursor.DEFAULT_CURSOR));
+                if (saveBtn != null) saveBtn.setEnabled(true);
+                if (cancelBtn != null) cancelBtn.setEnabled(true);
+                try {
+                    get();
+                    if (dlg != null) dlg.dispose();
+                    setStatus(success, UIConstants.SUCCESS_COLOR);
+                    loadData();
+                    if (showPaymentSuccess) {
+                        JOptionPane.showMessageDialog(dlg != null ? dlg : shell,
+                                "Payment completed successfully.",
+                                "Payments",
+                                JOptionPane.INFORMATION_MESSAGE);
+                    }
+                } catch (Exception ex) {
+                    Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
+                    String detail = UserMessageUtil.friendly(ex, "Unable to save payment. Please try again.");
+                    setStatus(detail, UIConstants.ERROR_COLOR);
+                    JOptionPane.showMessageDialog(dlg != null ? dlg : shell, detail,
+                            UIConstants.APP_NAME, JOptionPane.ERROR_MESSAGE);
+                }
             }
         }.execute();
     }
 
     private void filter() {
         String term = searchField.getText().trim().toLowerCase(Locale.ROOT);
-        List<Payment> src = term.isEmpty() ? allItems : allItems.stream()
-            .filter(p -> contains(p.getPaymentMethod(), term) || contains(p.getPaymentStatus(), term))
+        String statusFilter = statusFilterCombo != null
+                ? (String) statusFilterCombo.getSelectedItem() : "ALL";
+        List<Payment> src = allItems.stream()
+            .filter(p -> "ALL".equalsIgnoreCase(statusFilter)
+                    || statusFilter.equalsIgnoreCase(p.getPaymentStatus()))
+            .filter(p -> term.isEmpty() || contains(p.getPaymentMethod(), term)
+                    || contains(p.getPaymentStatus(), term)
+                    || contains(invoiceSearchText(p), term))
             .toList();
         displayedItems = new ArrayList<>(src);
         tableModel.setRowCount(0);
@@ -330,7 +364,14 @@ public class PaymentPage extends JPanel {
 
     private void setStatus(String msg, Color c) { statusLabel.setText(msg); statusLabel.setForeground(c); }
     private boolean contains(String v, String t) { return v != null && v.toLowerCase(Locale.ROOT).contains(t); }
-    private String rootMsg(String fb, Exception ex) { Throwable c = ex.getCause() != null ? ex.getCause() : ex; return c.getMessage() != null ? c.getMessage() : fb; }
+    private String invoiceSearchText(Payment payment) {
+        if (payment == null || payment.getInvoice() == null) {
+            return "";
+        }
+        String number = payment.getInvoice().getInvoiceNumber();
+        Long id = payment.getInvoice().getInvoiceId();
+        return (number != null ? number : "") + " " + (id != null ? id.toString() : "");
+    }
 
     private static JComboBox<String> styledCombo(String[] items) {
         JComboBox<String> cb = new JComboBox<>(items);

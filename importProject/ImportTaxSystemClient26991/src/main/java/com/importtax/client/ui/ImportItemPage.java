@@ -2,6 +2,8 @@ package com.importtax.client.ui;
 
 import com.importtax.client.rmi.RmiConnection;
 import com.importtax.client.util.CurrentSession;
+import com.importtax.client.util.TableFormatUtil;
+import com.importtax.client.util.UserMessageUtil;
 import com.importtax.client.util.RoundedButton;
 import com.importtax.client.util.UIConstants;
 import com.importtax.server.model.ImportItem;
@@ -32,7 +34,10 @@ public class ImportItemPage extends JPanel {
     private List<ImportItem> allItems       = new ArrayList<>();
     private List<ImportItem> displayedItems = new ArrayList<>();
 
+    private static final String[] STATUS_FILTER_OPTIONS = {"ALL", "PENDING", "PAID", "CLEARED", "HOLD"};
+
     private JTextField        searchField;
+    private JComboBox<String> statusFilterCombo;
     private JLabel            statusLabel;
     private JTable            itemTable;
     private DefaultTableModel tableModel;
@@ -90,17 +95,18 @@ public class ImportItemPage extends JPanel {
         card.setOpaque(false);
 
         JPanel toolbar = new JPanel(new MigLayout("insets 0, fillx",
-            "[grow][100!][130!][90!][90!]", "[40!]"));
+            "[grow][130!][100!][130!][90!][90!]", "[40!]"));
         toolbar.setOpaque(false);
 
         searchField = styledField();
-        searchField.putClientProperty("JTextField.placeholderText", "Search items...");
-        searchField.getDocument().addDocumentListener(new DocumentListener() {
-            public void insertUpdate(DocumentEvent e)  { applyFilter(); }
-            public void removeUpdate(DocumentEvent e)  { applyFilter(); }
-            public void changedUpdate(DocumentEvent e) { applyFilter(); }
-        });
+        searchField.putClientProperty("JTextField.placeholderText", "Search name, importer, category, status...");
+        searchField.getDocument().addDocumentListener(filterListener());
+
+        statusFilterCombo = styledStatusCombo();
+        statusFilterCombo.addActionListener(e -> applyFilter());
+
         toolbar.add(searchField, "grow, h 40!");
+        toolbar.add(statusFilterCombo, "h 40!");
 
         addButton     = actionBtn("Add Item", UIConstants.PRIMARY_COLOR);
         editButton    = actionBtn("Edit",     UIConstants.INFO_COLOR);
@@ -160,10 +166,16 @@ public class ImportItemPage extends JPanel {
         itemTable.setShowVerticalLines(false);
         itemTable.setIntercellSpacing(new Dimension(0, 0));
 
-        AlternatingRowRenderer base = new AlternatingRowRenderer();
-        for (int i = 0; i < tableModel.getColumnCount(); i++)
-            itemTable.getColumnModel().getColumn(i).setCellRenderer(base);
-        itemTable.getColumnModel().getColumn(9).setCellRenderer(new StatusRenderer());
+        for (int i = 0; i < tableModel.getColumnCount(); i++) {
+            if (i != 9) {
+                itemTable.getColumnModel().getColumn(i).setCellRenderer(TableFormatUtil.alternatingRenderer());
+            }
+        }
+        itemTable.getColumnModel().getColumn(9).setCellRenderer(TableFormatUtil.statusRenderer());
+        TableFormatUtil.applyCurrencyColumn(itemTable, 4);
+        TableFormatUtil.applyCurrencyColumn(itemTable, 5);
+        TableFormatUtil.applyCurrencyColumn(itemTable, 6);
+        TableFormatUtil.applyDateColumn(itemTable, 10);
 
         JTableHeader th = itemTable.getTableHeader();
         th.setFont(new Font("Segoe UI", Font.BOLD, 12));
@@ -198,7 +210,7 @@ public class ImportItemPage extends JPanel {
         if (!serviceOk()) return;
         ImportItemDialog d = new ImportItemDialog(shell);
         d.setSaveAction((src, item) -> mutate(src, "Saving...",
-            () -> importItemService.saveItem(item, CurrentSession.getLoggedInUserId()), "Item saved"));
+            () -> importItemService.saveItem(item, CurrentSession.getLoggedInUserId()), "Item saved", false, true));
         d.setVisible(true);
     }
 
@@ -207,8 +219,13 @@ public class ImportItemPage extends JPanel {
         if (sel == null) { status("Select an item to edit", UIConstants.WARNING_COLOR); return; }
         if (!serviceOk()) return;
         ImportItemDialog d = new ImportItemDialog(shell, sel);
-        d.setSaveAction((src, item) -> mutate(src, "Updating...",
-            () -> importItemService.updateItem(item, CurrentSession.getLoggedInUserId()), "Item updated"));
+        d.setSaveAction((src, item) -> {
+            boolean clearing = "CLEARED".equalsIgnoreCase(item.getStatus());
+            mutate(src, "Updating...",
+                () -> importItemService.updateItem(item, CurrentSession.getLoggedInUserId()),
+                clearing ? "Import item cleared" : "Item updated",
+                clearing);
+        });
         d.setVisible(true);
     }
 
@@ -240,13 +257,23 @@ public class ImportItemPage extends JPanel {
                     allItems = new ArrayList<>(get());
                     applyFilter();
                 } catch (Exception ex) {
-                    status(rootMsg("Load failed", ex), UIConstants.ERROR_COLOR);
+                    status(UserMessageUtil.friendly(ex, "Unable to load import items."), UIConstants.ERROR_COLOR);
                 }
             }
         }.execute();
     }
 
     private void mutate(ImportItemDialog dialog, String msg, RemoteMutation fn, String success) {
+        mutate(dialog, msg, fn, success, false, false);
+    }
+
+    private void mutate(ImportItemDialog dialog, String msg, RemoteMutation fn, String success,
+                        boolean cleared) {
+        mutate(dialog, msg, fn, success, cleared, false);
+    }
+
+    private void mutate(ImportItemDialog dialog, String msg, RemoteMutation fn, String success,
+                        boolean cleared, boolean isNew) {
         if (!serviceOk()) return;
         setLoading(true, msg);
         if (dialog != null) dialog.setLoading(true, msg);
@@ -260,8 +287,19 @@ public class ImportItemPage extends JPanel {
                     if (dialog != null) dialog.dispose();
                     status(success, UIConstants.SUCCESS_COLOR);
                     loadItems();
+                    if (cleared) {
+                        JOptionPane.showMessageDialog(dialog != null ? dialog : shell,
+                                "Import item cleared successfully.",
+                                UIConstants.APP_NAME,
+                                JOptionPane.INFORMATION_MESSAGE);
+                    } else {
+                        String msg = isNew ? "Import item saved successfully."
+                                : "Import item updated successfully.";
+                        JOptionPane.showMessageDialog(dialog != null ? dialog : shell,
+                                msg, UIConstants.APP_NAME, JOptionPane.INFORMATION_MESSAGE);
+                    }
                 } catch (Exception ex) {
-                    String err = rootMsg(success + " failed", ex);
+                    String err = UserMessageUtil.friendly(ex, "Unable to save import item. Please try again.");
                     status(err, UIConstants.ERROR_COLOR);
                     if (dialog != null) dialog.showErrorDialog(err);
                 }
@@ -271,9 +309,15 @@ public class ImportItemPage extends JPanel {
 
     private void applyFilter() {
         String term = searchField.getText().trim().toLowerCase(Locale.ROOT);
-        List<ImportItem> src = term.isEmpty() ? allItems : allItems.stream()
-            .filter(i -> contains(i.getItemName(), term) || contains(i.getCategory(), term)
-                      || contains(i.getImporterName(), term) || contains(i.getStatus(), term))
+        String statusFilter = statusFilterCombo != null
+                ? (String) statusFilterCombo.getSelectedItem() : "ALL";
+        List<ImportItem> src = allItems.stream()
+            .filter(i -> "ALL".equalsIgnoreCase(statusFilter)
+                    || statusFilter.equalsIgnoreCase(i.getStatus()))
+            .filter(i -> term.isEmpty() || contains(i.getItemName(), term)
+                    || contains(i.getCategory(), term)
+                    || contains(i.getImporterName(), term)
+                    || contains(i.getStatus(), term))
             .toList();
         displayedItems = new ArrayList<>(src);
         tableModel.setRowCount(0);
@@ -326,9 +370,20 @@ public class ImportItemPage extends JPanel {
         return val != null && val.toLowerCase(Locale.ROOT).contains(term);
     }
 
-    private String rootMsg(String fallback, Exception ex) {
-        Throwable c = ex.getCause() != null ? ex.getCause() : ex;
-        return c.getMessage() != null ? c.getMessage() : fallback;
+    private DocumentListener filterListener() {
+        return new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) { applyFilter(); }
+            public void removeUpdate(DocumentEvent e) { applyFilter(); }
+            public void changedUpdate(DocumentEvent e) { applyFilter(); }
+        };
+    }
+
+    private JComboBox<String> styledStatusCombo() {
+        JComboBox<String> cb = new JComboBox<>(STATUS_FILTER_OPTIONS);
+        cb.setFont(UIConstants.FONT_REGULAR);
+        cb.setBackground(UIConstants.PANEL_COLOR);
+        cb.setForeground(UIConstants.TEXT_COLOR);
+        return cb;
     }
 
     private JTextField styledField() {
@@ -380,9 +435,10 @@ public class ImportItemPage extends JPanel {
             if (sel) { setBackground(UIConstants.PRIMARY_COLOR); setForeground(Color.WHITE); return this; }
             setBackground(row % 2 == 0 ? UIConstants.PANEL_COLOR : new Color(235, 238, 243));
             setForeground(switch (s) {
-                case "APPROVED", "PAID", "CLEARED" -> UIConstants.SUCCESS_COLOR;
-                case "REJECTED", "HOLD"            -> UIConstants.ERROR_COLOR;
                 case "PENDING"                     -> UIConstants.WARNING_COLOR;
+                case "PAID"                        -> UIConstants.INFO_COLOR;
+                case "CLEARED", "APPROVED"        -> UIConstants.SUCCESS_COLOR;
+                case "HOLD"                        -> UIConstants.ERROR_COLOR;
                 default                            -> UIConstants.TEXT_COLOR;
             });
             setText(s);
