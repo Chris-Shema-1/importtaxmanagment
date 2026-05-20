@@ -142,6 +142,17 @@ public class PaymentFrame extends JFrame {
         table.setForeground(UIConstants.TEXT_COLOR);
         table.setSelectionBackground(UIConstants.PRIMARY_COLOR);
         table.setSelectionForeground(Color.WHITE);
+        table.setShowVerticalLines(false);
+        table.setIntercellSpacing(new Dimension(0, 1));
+        table.setGridColor(UIConstants.BORDER_COLOR);
+        table.setDefaultRenderer(Object.class, new AlternatingRowRenderer());
+        table.setDefaultRenderer(String.class, new AlternatingRowRenderer());
+        table.getColumnModel().getColumn(5).setCellRenderer(new StatusCellRenderer());
+        javax.swing.table.JTableHeader payHeader = table.getTableHeader();
+        payHeader.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        payHeader.setBackground(new Color(35, 35, 45));
+        payHeader.setForeground(UIConstants.TEXT_COLOR);
+        payHeader.setReorderingAllowed(false);
         panel.add(new JScrollPane(table), "grow, wrap");
 
         statusLabel = new JLabel(" ");
@@ -339,5 +350,49 @@ public class PaymentFrame extends JFrame {
     @FunctionalInterface
     private interface RemoteWork {
         Object run() throws Exception;
+    }
+
+    private static class AlternatingRowRenderer extends javax.swing.table.DefaultTableCellRenderer {
+        private static final Color EVEN = UIConstants.PANEL_COLOR;
+        private static final Color ODD  = new Color(38, 50, 62);
+
+        @Override
+        public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int column) {
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            setBorder(new EmptyBorder(0, 10, 0, 10));
+            if (isSelected) {
+                setBackground(UIConstants.PRIMARY_COLOR);
+                setForeground(Color.WHITE);
+            } else {
+                setBackground(row % 2 == 0 ? EVEN : ODD);
+                setForeground(UIConstants.TEXT_COLOR);
+            }
+            return this;
+        }
+    }
+
+    private static class StatusCellRenderer extends javax.swing.table.DefaultTableCellRenderer {
+        @Override
+        public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int column) {
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            setBorder(new EmptyBorder(0, 10, 0, 10));
+            setHorizontalAlignment(CENTER);
+            String status = value == null ? "" : value.toString().toUpperCase(Locale.ROOT);
+            if (isSelected) {
+                setBackground(UIConstants.PRIMARY_COLOR);
+                setForeground(Color.WHITE);
+            } else {
+                setBackground(row % 2 == 0 ? UIConstants.PANEL_COLOR : new Color(38, 50, 62));
+                setForeground(switch (status) {
+                    case "PAID" -> UIConstants.SUCCESS_COLOR;
+                    case "FAILED" -> UIConstants.ERROR_COLOR;
+                    case "PENDING" -> UIConstants.WARNING_COLOR;
+                    default -> UIConstants.TEXT_COLOR;
+                });
+            }
+            return this;
+        }
     }
 }

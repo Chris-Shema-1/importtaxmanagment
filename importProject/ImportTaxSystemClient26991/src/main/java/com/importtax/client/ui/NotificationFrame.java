@@ -136,6 +136,17 @@ public class NotificationFrame extends JFrame {
         table.setForeground(UIConstants.TEXT_COLOR);
         table.setSelectionBackground(UIConstants.PRIMARY_COLOR);
         table.setSelectionForeground(Color.WHITE);
+        table.setShowVerticalLines(false);
+        table.setIntercellSpacing(new java.awt.Dimension(0, 1));
+        table.setGridColor(UIConstants.BORDER_COLOR);
+        table.setDefaultRenderer(Object.class, new AlternatingRowRenderer());
+        table.setDefaultRenderer(String.class, new AlternatingRowRenderer());
+        table.getColumnModel().getColumn(4).setCellRenderer(new StatusCellRenderer());
+        javax.swing.table.JTableHeader notifHeader = table.getTableHeader();
+        notifHeader.setFont(new Font("Segoe UI", Font.BOLD, 12));
+        notifHeader.setBackground(new Color(35, 35, 45));
+        notifHeader.setForeground(UIConstants.TEXT_COLOR);
+        notifHeader.setReorderingAllowed(false);
         panel.add(new JScrollPane(table), "grow, wrap");
 
         statusLabel = new JLabel(" ");
@@ -320,5 +331,48 @@ public class NotificationFrame extends JFrame {
     @FunctionalInterface
     private interface RemoteWork {
         Object run() throws Exception;
+    }
+
+    private static class AlternatingRowRenderer extends javax.swing.table.DefaultTableCellRenderer {
+        private static final java.awt.Color EVEN = UIConstants.PANEL_COLOR;
+        private static final java.awt.Color ODD  = new java.awt.Color(38, 50, 62);
+
+        @Override
+        public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int column) {
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            setBorder(new javax.swing.border.EmptyBorder(0, 10, 0, 10));
+            if (isSelected) {
+                setBackground(UIConstants.PRIMARY_COLOR);
+                setForeground(java.awt.Color.WHITE);
+            } else {
+                setBackground(row % 2 == 0 ? EVEN : ODD);
+                setForeground(UIConstants.TEXT_COLOR);
+            }
+            return this;
+        }
+    }
+
+    private static class StatusCellRenderer extends javax.swing.table.DefaultTableCellRenderer {
+        @Override
+        public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int column) {
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            setBorder(new javax.swing.border.EmptyBorder(0, 10, 0, 10));
+            setHorizontalAlignment(CENTER);
+            String status = value == null ? "" : value.toString().toUpperCase(Locale.ROOT);
+            if (isSelected) {
+                setBackground(UIConstants.PRIMARY_COLOR);
+                setForeground(java.awt.Color.WHITE);
+            } else {
+                setBackground(row % 2 == 0 ? UIConstants.PANEL_COLOR : new java.awt.Color(38, 50, 62));
+                setForeground(switch (status) {
+                    case "SENT" -> UIConstants.SUCCESS_COLOR;
+                    case "FAILED" -> UIConstants.ERROR_COLOR;
+                    default -> UIConstants.WARNING_COLOR;
+                });
+            }
+            return this;
+        }
     }
 }

@@ -347,12 +347,12 @@ public class DashboardFrame extends JFrame {
 
         setLoading(true);
         new SwingWorker<Void, Void>() {
-            List<User> users;
-            List<ImportItem> items;
-            List<Tax> taxes;
-            List<Invoice> invoices;
-            List<Payment> payments;
-            List<Notification> notifications;
+            private List<User> users;
+            private List<ImportItem> items;
+            private List<Tax> taxes;
+            private List<Invoice> invoices;
+            private List<Payment> payments;
+            private List<Notification> notifications;
 
             @Override
             protected Void doInBackground() throws Exception {
@@ -497,8 +497,9 @@ public class DashboardFrame extends JFrame {
         Thread clockThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    dateTimeLabel.setText(LocalDateTime.now()
-                            .format(DateTimeFormatter.ofPattern("EEEE, MMM dd yyyy | HH:mm:ss")));
+                    String text = LocalDateTime.now()
+                            .format(DateTimeFormatter.ofPattern("EEEE, MMM dd yyyy | HH:mm:ss"));
+                    javax.swing.SwingUtilities.invokeLater(() -> dateTimeLabel.setText(text));
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();

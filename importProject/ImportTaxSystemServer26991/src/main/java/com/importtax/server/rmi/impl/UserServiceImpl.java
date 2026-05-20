@@ -8,6 +8,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.rmi.RemoteException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDate;
 
 public class UserServiceImpl extends AbstractRemoteCrudService<User> implements UserService {
@@ -27,7 +29,7 @@ public class UserServiceImpl extends AbstractRemoteCrudService<User> implements 
 
     @Override
     public User login(String username, String password) throws RemoteException {
-        return execute("login", () -> sanitize(userDao.login(username, password).orElse(null)));
+        return authenticateUser(username, password);
     }
 
     @Override
@@ -50,7 +52,7 @@ public class UserServiceImpl extends AbstractRemoteCrudService<User> implements 
             newUser.setFullName(fullName);
             newUser.setEmail(email);
             newUser.setUsername(username);
-            newUser.setPassword(user.getPassword());
+            newUser.setPassword(hashPassword(user.getPassword()));
             newUser.setRole(user.getRole());
             newUser.setCreatedAt(LocalDate.now());
 
@@ -68,7 +70,7 @@ public class UserServiceImpl extends AbstractRemoteCrudService<User> implements 
                 throw new IllegalArgumentException("Username and password are required");
             }
 
-            User user = userDao.login(normalizedUsername, rawPassword)
+            User user = userDao.login(normalizedUsername, hashPassword(rawPassword))
                     .orElseThrow(() -> new IllegalArgumentException("Invalid username or password"));
             return sanitize(user);
         });
@@ -154,5 +156,19 @@ public class UserServiceImpl extends AbstractRemoteCrudService<User> implements 
 
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
+    }
+
+    private String hashPassword(String password) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(password.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder();
+            for (byte b : hash) {
+                hex.append(String.format("%02x", b));
+            }
+            return hex.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("SHA-256 not available", e);
+        }
     }
 }

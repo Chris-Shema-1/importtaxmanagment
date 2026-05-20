@@ -37,6 +37,7 @@ import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 import net.miginfocom.swing.MigLayout;
@@ -373,13 +374,11 @@ public class LoginFrame extends JFrame {
         persistNotification("OTP", authenticatedUser.getUsername(),
                 "Simulated OTP generated for login: " + otp, "SENT");
 
-        JOptionPane.showMessageDialog(this,
-                "OTP simulation for " + authenticatedUser.getUsername() + ": " + otp
-                        + "\nEnter this code in the next prompt to complete sign-in.",
-                "OTP Verification", JOptionPane.INFORMATION_MESSAGE);
-
         String input = JOptionPane.showInputDialog(this,
-                "Enter the 6-digit OTP code:", "OTP Verification", JOptionPane.QUESTION_MESSAGE);
+                "OTP sent to: " + authenticatedUser.getUsername()
+                        + "\nSimulated OTP: " + otp
+                        + "\n\nEnter the 6-digit OTP code:",
+                "OTP Verification", JOptionPane.QUESTION_MESSAGE);
         boolean verified = otp.equals(input == null ? "" : input.trim());
         persistNotification("OTP", authenticatedUser.getUsername(),
                 verified ? "OTP validated successfully" : "OTP validation failed", verified ? "SENT" : "FAILED");
@@ -430,9 +429,9 @@ public class LoginFrame extends JFrame {
         Thread clockThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    LocalDateTime now = LocalDateTime.now();
-                    String formattedDate = now.format(DateTimeFormatter.ofPattern("EEEE, MMMM dd, yyyy"));
-                    dateTimeLabel.setText(formattedDate);
+                    String formattedDate = LocalDateTime.now()
+                            .format(DateTimeFormatter.ofPattern("EEEE, MMMM dd, yyyy"));
+                    SwingUtilities.invokeLater(() -> dateTimeLabel.setText(formattedDate));
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
