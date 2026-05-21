@@ -1,6 +1,7 @@
 package com.importtax.client.ui;
 
 import com.importtax.client.rmi.RmiConnection;
+import com.importtax.client.util.CurrentSession;
 import com.importtax.client.util.RoundedButton;
 import com.importtax.client.util.UIConstants;
 import com.importtax.server.model.Tax;
@@ -105,20 +106,24 @@ public class TaxPage extends JPanel {
         deleteBtn.addActionListener(e  -> deleteSelected());
         refreshBtn.addActionListener(e -> loadData());
         toolbar.add(searchField, "grow, h 40!");
-        toolbar.add(addBtn,    "h 40!");
-        toolbar.add(editBtn,   "h 40!");
-        toolbar.add(deleteBtn, "h 40!");
+        if (CurrentSession.isAdmin()) {
+            toolbar.add(addBtn,    "h 40!");
+            toolbar.add(editBtn,   "h 40!");
+            toolbar.add(deleteBtn, "h 40!");
+        }
         card.add(toolbar, "growx, wrap, gapbottom 12");
 
         tableModel = new DefaultTableModel(new Object[]{"ID", "Tax Name", "Rate (%)", "Description"}, 0) {
             public boolean isCellEditable(int r, int c) { return false; }
         };
         table = styledTable(tableModel);
-        table.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseClicked(java.awt.event.MouseEvent e) {
-                if (e.getClickCount() == 2) openEdit();
-            }
-        });
+        if (CurrentSession.isAdmin()) {
+            table.addMouseListener(new java.awt.event.MouseAdapter() {
+                public void mouseClicked(java.awt.event.MouseEvent e) {
+                    if (e.getClickCount() == 2) openEdit();
+                }
+            });
+        }
         int[] widths = {60, 220, 120, 400};
         for (int i = 0; i < widths.length; i++)
             table.getColumnModel().getColumn(i).setPreferredWidth(widths[i]);

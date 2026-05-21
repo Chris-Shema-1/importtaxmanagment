@@ -13,6 +13,8 @@ public interface ImportItemService extends RemoteCrudService<ImportItem> {
 
     void deleteItem(Long itemId) throws RemoteException;
 
+    void deleteItemSecure(Long itemId, Long callerUserId) throws RemoteException;
+
     List<ImportItem> findAllItems() throws RemoteException;
 
     ImportItem findItemById(Long itemId) throws RemoteException;

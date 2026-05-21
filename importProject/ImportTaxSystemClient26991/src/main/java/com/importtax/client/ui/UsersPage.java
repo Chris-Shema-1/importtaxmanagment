@@ -1,7 +1,9 @@
 package com.importtax.client.ui;
 
 import com.importtax.client.rmi.RmiConnection;
+import com.importtax.client.util.CurrentSession;
 import com.importtax.client.util.UIConstants;
+import com.importtax.client.util.UserMessageUtil;
 import com.importtax.server.model.User;
 import com.importtax.server.rmi.UserService;
 import java.awt.*;
@@ -25,7 +27,7 @@ public class UsersPage extends JPanel {
     private static final long serialVersionUID = 1L;
     private static final Logger logger = LoggerFactory.getLogger(UsersPage.class);
 
-    private static final String[] ROLES = {"ADMIN", "MANAGER", "OFFICER", "VIEWER"};
+    private static final String[] ROLES = {"ADMIN", "CUSTOMS_OFFICER", "FINANCE_OFFICER"};
 
     private final AppShell shell;
     private UserService userService;
@@ -121,10 +123,10 @@ public class UsersPage extends JPanel {
                 if (sel) { setBackground(UIConstants.PRIMARY_COLOR); setForeground(Color.WHITE); return this; }
                 setBackground(row % 2 == 0 ? UIConstants.PANEL_COLOR : new Color(235, 238, 243));
                 setForeground(switch (s) {
-                    case "ADMIN"   -> UIConstants.ERROR_COLOR;
-                    case "MANAGER" -> UIConstants.WARNING_COLOR;
-                    case "OFFICER" -> UIConstants.INFO_COLOR;
-                    default        -> UIConstants.TEXT_SECONDARY;
+                    case "ADMIN"           -> UIConstants.ERROR_COLOR;
+                    case "CUSTOMS_OFFICER" -> UIConstants.INFO_COLOR;
+                    case "FINANCE_OFFICER" -> UIConstants.WARNING_COLOR;
+                    default                -> UIConstants.TEXT_SECONDARY;
                 });
                 return this;
             }
@@ -168,7 +170,7 @@ public class UsersPage extends JPanel {
         roleBox.setFont(UIConstants.FONT_REGULAR);
         roleBox.setBackground(UIConstants.PANEL_COLOR);
         roleBox.setForeground(UIConstants.TEXT_COLOR);
-        roleBox.setSelectedItem(sel.getRole() != null ? sel.getRole().toUpperCase(Locale.ROOT) : ROLES[3]);
+        roleBox.setSelectedItem(sel.getRole() != null ? sel.getRole().toUpperCase(Locale.ROOT) : ROLES[0]);
 
         TaxPage.addRow(form, "User", nameField);
         JLabel rl = new JLabel("Role");
@@ -190,7 +192,7 @@ public class UsersPage extends JPanel {
         cancel.addActionListener(e -> dlg.dispose());
         save.addActionListener(e -> {
             sel.setRole((String) roleBox.getSelectedItem());
-            mutate(dlg, "Updating...", () -> userService.update(sel), "User updated");
+            mutate(dlg, "Updating...", () -> userService.updateUserSecure(sel, CurrentSession.getLoggedInUserId()), "User updated");
         });
         btns.add(new JLabel(), "grow");
         btns.add(cancel, "h 42!");
@@ -208,7 +210,9 @@ public class UsersPage extends JPanel {
         int ok = JOptionPane.showConfirmDialog(shell,
             "Delete user \"" + sel.getUsername() + "\"? This cannot be undone.", "Confirm", JOptionPane.YES_NO_OPTION);
         if (ok != JOptionPane.YES_OPTION) return;
-        mutate(null, "Deleting...", () -> userService.delete(sel), "User deleted");
+        mutate(null, "Deleting...", () ->
+            userService.deleteUserSecure(sel.getUserId(), CurrentSession.getLoggedInUserId()),
+            "User deleted");
     }
 
     private void loadData() {
@@ -218,7 +222,9 @@ public class UsersPage extends JPanel {
             protected List<User> doInBackground() throws Exception { return userService.findAll(); }
             protected void done() {
                 try { allItems = new ArrayList<>(get()); filter(); }
-                catch (Exception ex) { setStatus(rootMsg("Load failed", ex), UIConstants.ERROR_COLOR); }
+                catch (Exception ex) {
+                    setStatus(UserMessageUtil.friendly(ex, "Unable to load users."), UIConstants.ERROR_COLOR);
+                }
             }
         }.execute();
     }
@@ -230,7 +236,9 @@ public class UsersPage extends JPanel {
             protected Void doInBackground() throws Exception { fn.call(); return null; }
             protected void done() {
                 try { get(); if (dlg != null) dlg.dispose(); setStatus(success, UIConstants.SUCCESS_COLOR); loadData(); }
-                catch (Exception ex) { setStatus(rootMsg(success + " failed", ex), UIConstants.ERROR_COLOR); }
+                catch (Exception ex) {
+                    setStatus(UserMessageUtil.friendly(ex, success + " failed."), UIConstants.ERROR_COLOR);
+                }
             }
         }.execute();
     }

@@ -219,25 +219,62 @@ public class PaymentServiceImpl extends AbstractRemoteCrudService<Payment> imple
         });
     }
 
-    /**
-     * Initialize lazy-loaded fields before RMI serialization
-     */
+    private void validateCallerRole(Long callerUserId) throws RemoteException {
+        if (callerUserId == null) {
+            return;
+        }
+        com.importtax.server.dao.UserDao userDao = new com.importtax.server.dao.impl.UserDaoImpl();
+        com.importtax.server.model.User caller = userDao.findById(callerUserId).orElse(null);
+        if (caller == null) {
+            throw new IllegalArgumentException("Caller user not found.");
+        }
+        String role = caller.getRole();
+        if ("CUSTOMS_OFFICER".equalsIgnoreCase(role)) {
+            throw new SecurityException("Access denied. Customs Officer cannot manage payments.");
+        }
+    }
+
+    @Override
+    public Payment savePaymentSecure(Payment payment, Long callerUserId) throws RemoteException {
+        validateCallerRole(callerUserId);
+        return save(payment);
+    }
+
+    @Override
+    public Payment updatePaymentSecure(Payment payment, Long callerUserId) throws RemoteException {
+        validateCallerRole(callerUserId);
+        return update(payment);
+    }
+
+    @Override
+    public void deletePaymentSecure(Long paymentId, Long callerUserId) throws RemoteException {
+        validateCallerRole(callerUserId);
+        execute("deletePaymentSecure", () -> {
+            if (paymentId == null) {
+                throw new IllegalArgumentException("Payment ID is required");
+            }
+            Payment payment = paymentDao.findById(paymentId)
+                    .orElseThrow(() -> new IllegalArgumentException("Payment not found"));
+            paymentDao.delete(payment);
+            return null;
+        });
+    }
+
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
     }
 
+    /**
+     * Prepare payment graphs for RMI without touching lazy associations outside an open session.
+     */
     private void initializeLazyFields(Payment payment) {
         if (payment == null) {
             return;
         }
-
-        // Initialize the lazy-loaded invoice
-        if (payment.getInvoice() != null) {
-            Hibernate.initialize(payment.getInvoice());
-            // Also initialize the importItem within the invoice
-            if (payment.getInvoice().getImportItem() != null) {
-                Hibernate.initialize(payment.getInvoice().getImportItem());
-            }
+        Invoice invoice = payment.getInvoice();
+        if (invoice != null) {
+            invoice.setImportItem(null);
+            invoice.setPayment(null);
         }
     }
 }

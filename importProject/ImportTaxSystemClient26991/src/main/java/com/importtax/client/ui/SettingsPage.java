@@ -16,11 +16,19 @@ public class SettingsPage extends JPanel {
     public SettingsPage(AppShell shell) {
         setBackground(UIConstants.BACKGROUND_COLOR);
         setLayout(new BorderLayout());
-        add(buildContent(), BorderLayout.CENTER);
+
+        JPanel content = buildContent();
+        JScrollPane scroll = new JScrollPane(content);
+        scroll.setBorder(null);
+        scroll.getViewport().setBackground(UIConstants.BACKGROUND_COLOR);
+        scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scroll.getVerticalScrollBar().setUnitIncrement(18);
+        add(scroll, BorderLayout.CENTER);
     }
 
     private JPanel buildContent() {
-        JPanel root = new JPanel(new MigLayout("insets 28 28 28 28, fillx", "[grow]", "[][][][]"));
+        JPanel root = new JPanel(new MigLayout("insets 28 28 40 28, fillx", "[grow]", "[][][][]"));
         root.setBackground(UIConstants.BACKGROUND_COLOR);
 
         JLabel title = new JLabel("Settings");

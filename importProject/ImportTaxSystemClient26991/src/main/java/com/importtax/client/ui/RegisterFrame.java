@@ -23,6 +23,9 @@ import org.slf4j.LoggerFactory;
 public class RegisterFrame extends JFrame {
 
     private static final long serialVersionUID = 1L;
+    private static final UserRole[] REGISTRATION_ROLES = {
+        UserRole.FINANCE_OFFICER, UserRole.CUSTOMS_OFFICER
+    };
     private static final Logger logger = LoggerFactory.getLogger(RegisterFrame.class);
 
     private JTextField     fullNameField;
@@ -151,7 +154,7 @@ public class RegisterFrame extends JFrame {
         content.add(sectionLabel("Access Level"), "wrap");
 
         content.add(fieldLabel("Role"), "wrap");
-        roleComboBox = new JComboBox<>(UserRole.values());
+        roleComboBox = new JComboBox<>(REGISTRATION_ROLES);
         roleComboBox.setSelectedItem(null);
         roleComboBox.setFont(UIConstants.FONT_REGULAR);
         roleComboBox.setBackground(UIConstants.PANEL_COLOR);

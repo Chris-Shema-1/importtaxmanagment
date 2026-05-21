@@ -1,6 +1,7 @@
 package com.importtax.client.ui;
 
 import com.importtax.client.rmi.RmiConnection;
+import com.importtax.client.util.CurrentSession;
 import com.importtax.client.util.TableFormatUtil;
 import com.importtax.client.util.UserMessageUtil;
 import com.importtax.client.util.UIConstants;
@@ -250,7 +251,12 @@ public class PaymentPage extends JPanel {
                 p.setPaymentMethod(method);
                 p.setPaymentStatus(status);
                 p.setInvoice(selInv);
-                if (existing == null) paymentService.save(p); else paymentService.update(p);
+                Long callerId = CurrentSession.getLoggedInUserId();
+                if (existing == null) {
+                    paymentService.savePaymentSecure(p, callerId);
+                } else {
+                    paymentService.updatePaymentSecure(p, callerId);
+                }
             }, existing == null ? "Payment saved" : "Payment updated", completed);
         });
         btns.add(new JLabel(), "grow");
@@ -270,7 +276,9 @@ public class PaymentPage extends JPanel {
             "Delete payment #" + sel.getPaymentId() + "? This cannot be undone.",
             "Confirm Delete", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (ok != JOptionPane.YES_OPTION) return;
-        mutate(null, null, null, "Deleting...", () -> paymentService.delete(sel), "Payment deleted");
+        mutate(null, null, null, "Deleting...", () ->
+            paymentService.deletePaymentSecure(sel.getPaymentId(), CurrentSession.getLoggedInUserId()),
+            "Payment deleted");
     }
 
     private void loadData() {

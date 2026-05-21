@@ -254,15 +254,16 @@ public class LoginPanel extends JPanel {
                     proceedWithOtp(u);
                 } catch (Exception ex) {
                     setLoading(false, " ");
-                    Throwable cause = ex.getCause() != null ? ex.getCause() : ex;
-                    if (findCause(cause, IllegalArgumentException.class) != null) {
+                    if (isInvalidCredentials(ex)) {
                         showAuthError();
                         JOptionPane.showMessageDialog(host,
                                 "Invalid username or password.",
                                 UIConstants.APP_NAME,
                                 JOptionPane.ERROR_MESSAGE);
-                    } else {
+                    } else if (isConnectionFailure(ex)) {
                         showError("Login service unavailable — start the RMI server first.");
+                    } else {
+                        showError("Invalid username or password");
                     }
                 }
             }
@@ -334,9 +335,41 @@ public class LoginPanel extends JPanel {
         passwordField.requestFocus();
     }
 
-    private Throwable findCause(Throwable t, Class<? extends Throwable> type) {
-        while (t != null) { if (type.isInstance(t)) return t; t = t.getCause(); }
-        return null;
+    private boolean isInvalidCredentials(Throwable error) {
+        Throwable current = error;
+        while (current != null) {
+            String message = current.getMessage();
+            if (message != null
+                    && message.toLowerCase(java.util.Locale.ROOT).contains("invalid username or password")) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private boolean isConnectionFailure(Throwable error) {
+        Throwable current = error;
+        while (current != null) {
+            if (current instanceof java.rmi.ConnectException
+                    || current instanceof java.rmi.ConnectIOException
+                    || current instanceof java.rmi.NotBoundException
+                    || current instanceof java.net.ConnectException) {
+                return true;
+            }
+            String message = current.getMessage();
+            if (message != null) {
+                String lower = message.toLowerCase(java.util.Locale.ROOT);
+                if (lower.contains("connection refused")
+                        || lower.contains("connect to")
+                        || lower.contains("not bound")
+                        || lower.contains("no such object")) {
+                    return true;
+                }
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
 }

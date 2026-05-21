@@ -19,6 +19,12 @@ public final class UserMessageUtil {
                 return message.trim();
             }
         }
+        if (root instanceof java.rmi.RemoteException remote) {
+            String message = remote.getMessage();
+            if (message != null && !message.isBlank() && isUserSafe(message)) {
+                return message.trim();
+            }
+        }
         String message = root.getMessage();
         if (message != null && isUserSafe(message)) {
             return message.trim();
@@ -46,5 +52,12 @@ public final class UserMessageUtil {
                 && !lower.contains("rmi")
                 && !message.contains("Exception")
                 && message.length() <= 200;
+    }
+
+    public static void showAccessDenied(java.awt.Component parent) {
+        javax.swing.JOptionPane.showMessageDialog(parent,
+                "Access denied.\nYou do not have permission to perform this action.",
+                "Access Denied",
+                javax.swing.JOptionPane.ERROR_MESSAGE);
     }
 }

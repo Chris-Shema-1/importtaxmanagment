@@ -96,6 +96,15 @@ public class AppShell extends JFrame {
 
     // ── Navigation ─────────────────────────────────────────────────────────
     public void navigate(String page) {
+        if (PAGE_USERS.equals(page) && !CurrentSession.isAdmin()) {
+            com.importtax.client.util.UserMessageUtil.showAccessDenied(this);
+            return;
+        }
+        if (PAGE_PAYMENTS.equals(page) && CurrentSession.isCustomsOfficer()) {
+            com.importtax.client.util.UserMessageUtil.showAccessDenied(this);
+            return;
+        }
+
         activePage = page;
         headerTitle.setText(page);
         cardLayout.show(cardPanel, page);
@@ -146,7 +155,15 @@ public class AppShell extends JFrame {
         nav.setOpaque(false);
         String[] pages = {PAGE_DASHBOARD, PAGE_USERS, PAGE_IMPORTS, PAGE_TAXES,
                           PAGE_INVOICES, PAGE_PAYMENTS, PAGE_REPORTS, PAGE_NOTIFICATIONS, PAGE_SETTINGS};
-        for (String p : pages) nav.add(navItem(p), "wrap, h 44!");
+        for (String p : pages) {
+            if (PAGE_USERS.equals(p) && !CurrentSession.isAdmin()) {
+                continue;
+            }
+            if (PAGE_PAYMENTS.equals(p) && CurrentSession.isCustomsOfficer()) {
+                continue;
+            }
+            nav.add(navItem(p), "wrap, h 44!");
+        }
         sidebarPanel.add(nav, "grow, wrap");
 
         // User + logout

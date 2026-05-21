@@ -35,6 +35,9 @@ public class UserServiceImpl extends AbstractRemoteCrudService<User> implements 
     public User registerUser(User user) throws RemoteException {
         return execute("registerUser", () -> {
             validateRegistration(user);
+            if ("ADMIN".equalsIgnoreCase(user.getRole())) {
+                throw new SecurityException("Public registration of Administrator accounts is not permitted.");
+            }
 
             String fullName = user.getFullName().trim();
             String email = user.getEmail().trim().toLowerCase();
@@ -136,6 +139,49 @@ public class UserServiceImpl extends AbstractRemoteCrudService<User> implements 
     @Override
     public User findByUsername(String username) throws RemoteException {
         return execute("findByUsername", () -> sanitize(userDao.findByUsername(username).orElse(null)));
+    }
+
+    @Override
+    public User updateUserSecure(User user, Long callerUserId) throws RemoteException {
+        return execute("updateUserSecure", () -> {
+            User caller = userDao.findById(callerUserId).orElse(null);
+            if (caller == null || !"ADMIN".equalsIgnoreCase(caller.getRole())) {
+                throw new SecurityException("Access denied. Administrator privileges required.");
+            }
+            if (user == null || user.getUserId() == null) {
+                throw new IllegalArgumentException("User data and User ID are required");
+            }
+            User existing = userDao.findById(user.getUserId())
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            existing.setFullName(user.getFullName());
+            existing.setEmail(user.getEmail());
+            existing.setUsername(user.getUsername());
+            existing.setRole(user.getRole());
+            if (user.getPassword() != null && !user.getPassword().isBlank()) {
+                existing.setPassword(PasswordUtil.hashPassword(user.getPassword()));
+            }
+            return sanitize(userDao.update(existing));
+        });
+    }
+
+    @Override
+    public void deleteUserSecure(Long userIdToDelete, Long callerUserId) throws RemoteException {
+        execute("deleteUserSecure", () -> {
+            User caller = userDao.findById(callerUserId).orElse(null);
+            if (caller == null || !"ADMIN".equalsIgnoreCase(caller.getRole())) {
+                throw new SecurityException("Access denied. Administrator privileges required.");
+            }
+            if (userIdToDelete == null) {
+                throw new IllegalArgumentException("User ID to delete is required");
+            }
+            if (userIdToDelete.equals(callerUserId)) {
+                throw new IllegalArgumentException("You cannot delete your own account.");
+            }
+            User existing = userDao.findById(userIdToDelete)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+            userDao.delete(existing);
+            return null;
+        });
     }
 
     private User sanitize(User user) {

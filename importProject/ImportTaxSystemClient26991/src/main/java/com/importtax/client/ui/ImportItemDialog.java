@@ -1,10 +1,13 @@
 package com.importtax.client.ui;
 
+import com.importtax.client.rmi.RmiConnection;
 import com.importtax.client.util.CurrentSession;
 import com.importtax.client.util.RoundedButton;
 import com.importtax.client.util.RoundedPanel;
 import com.importtax.client.util.UIConstants;
 import com.importtax.server.model.ImportItem;
+import com.importtax.server.model.Tax;
+import com.importtax.server.rmi.TaxService;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Cursor;
@@ -12,11 +15,16 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 import javax.swing.BorderFactory;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
+import javax.swing.JList;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -37,6 +45,7 @@ public class ImportItemDialog extends JDialog {
     private static final String[] STATUSES = {"PENDING", "PAID", "CLEARED", "HOLD"};
 
     private final ImportItem editingItem;
+    private boolean isReadOnly = false;
 
     private JTextField itemNameField;
     private JTextField categoryField;
@@ -45,6 +54,7 @@ public class ImportItemDialog extends JDialog {
     private JTextField unitPriceField;
     private JTextField countryField;
     private JTextField importerNameField;
+    private JComboBox<Tax> taxTypeCombo;
     private JTextField taxRateField;
     private JTextField totalTaxField;
     private JTextField importDateField;
@@ -56,15 +66,23 @@ public class ImportItemDialog extends JDialog {
     private SaveAction saveAction;
 
     public ImportItemDialog(JFrame owner) {
-        this(owner, null);
+        this(owner, null, false);
     }
 
     public ImportItemDialog(JFrame owner, ImportItem item) {
-        super(owner, item == null ? "Add New Import" : "Edit Import Item — " + UIConstants.APP_NAME, true);
+        this(owner, item, false);
+    }
+
+    public ImportItemDialog(JFrame owner, ImportItem item, boolean isReadOnly) {
+        super(owner, item == null ? "Add New Import" : (isReadOnly ? "View Import Item — " : "Edit Import Item — ") + UIConstants.APP_NAME, true);
         this.editingItem = item;
+        this.isReadOnly = isReadOnly;
         initializeDialog(owner);
         setContentPane(createContentPanel());
         populateForm(item);
+        if (isReadOnly) {
+            applyReadOnly();
+        }
     }
 
     public void setSaveAction(SaveAction saveAction) {
@@ -132,11 +150,21 @@ public class ImportItemDialog extends JDialog {
         totalTaxField.setFocusable(false);
         importDateField = createTextField();
         importDateField.setText(LocalDate.now().toString());
-        statusComboBox = new JComboBox<>(STATUSES);
+        String[] statusesToUse = STATUSES;
+        if (CurrentSession.isCustomsOfficer()) {
+            boolean alreadyPaidOrCleared = editingItem != null && 
+                ("PAID".equalsIgnoreCase(editingItem.getStatus()) || "CLEARED".equalsIgnoreCase(editingItem.getStatus()));
+            if (!alreadyPaidOrCleared) {
+                statusesToUse = new String[]{"PENDING", "PAID", "HOLD"};
+            }
+        }
+        statusComboBox = new JComboBox<>(statusesToUse);
         statusComboBox.setSelectedItem("PENDING");
         statusComboBox.setFont(UIConstants.FONT_REGULAR);
         statusComboBox.setBackground(UIConstants.PANEL_COLOR);
         statusComboBox.setForeground(UIConstants.TEXT_COLOR);
+        taxTypeCombo = createTaxTypeCombo();
+        taxTypeCombo.addActionListener(e -> applySelectedTaxRate());
         installTaxPreviewListeners();
 
         addField(form, "Item Name", itemNameField);
@@ -146,6 +174,7 @@ public class ImportItemDialog extends JDialog {
         addField(form, "Unit Price", unitPriceField);
         addField(form, "Country of Origin", countryField);
         addField(form, "Importer Name", importerNameField);
+        addField(form, "Tax Type", taxTypeCombo);
         addField(form, "Tax Rate (%)", taxRateField);
         addField(form, "Total Tax", totalTaxField);
         addField(form, "Import Date", importDateField);
@@ -260,6 +289,7 @@ public class ImportItemDialog extends JDialog {
             countryField.setText(nullToEmpty(item.getCountryOfOrigin()));
             importerNameField.setText(nullToEmpty(item.getImporterName()));
             taxRateField.setText(item.getTaxRate() == null ? "" : item.getTaxRate().toString());
+            selectTaxTypeForRate(item.getTaxRate());
             totalTaxField.setText(item.getTotalTax() == null ? "" : item.getTotalTax().toString());
             importDateField.setText(item.getImportDate() == null ? "" : item.getImportDate().toString());
             statusComboBox.setSelectedItem(nullToEmpty(item.getStatus()));
@@ -317,6 +347,7 @@ public class ImportItemDialog extends JDialog {
         item.setImportDate(parseDate(importDateField.getText()));
         item.setStatus((String) statusComboBox.getSelectedItem());
         item.setUser(CurrentSession.getLoggedInUser());
+        item.setAppliedTaxes(null);
         return item;
     }
 
@@ -422,6 +453,94 @@ public class ImportItemDialog extends JDialog {
 
     private void showValidationError(String message) {
         showErrorDialog(message);
+    }
+
+    private JComboBox<Tax> createTaxTypeCombo() {
+        JComboBox<Tax> combo = new JComboBox<>();
+        combo.setFont(UIConstants.FONT_REGULAR);
+        combo.setBackground(UIConstants.PANEL_COLOR);
+        combo.setForeground(UIConstants.TEXT_COLOR);
+        combo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public java.awt.Component getListCellRendererComponent(JList<?> list, Object value,
+                    int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value == null) {
+                    setText("— Select tax or enter rate below —");
+                } else if (value instanceof Tax tax) {
+                    String rate = tax.getTaxRate() != null ? tax.getTaxRate().toPlainString() + "%" : "";
+                    setText(tax.getTaxName() + " (" + rate + ")");
+                }
+                return this;
+            }
+        });
+        combo.addItem(null);
+        loadTaxOptions(combo);
+        return combo;
+    }
+
+    private void loadTaxOptions(JComboBox<Tax> combo) {
+        try {
+            RmiConnection.initialize();
+            TaxService taxService = RmiConnection.lookup(UIConstants.RMI_SERVICE_TAX);
+            List<Tax> taxes = taxService.findAll();
+            if (taxes != null) {
+                for (Tax tax : taxes) {
+                    combo.addItem(tax);
+                }
+            }
+        } catch (RemoteException | NotBoundException ignored) {
+            // Tax service optional — manual tax rate entry remains available.
+        }
+    }
+
+    private void applySelectedTaxRate() {
+        Tax selected = (Tax) taxTypeCombo.getSelectedItem();
+        if (selected != null && selected.getTaxRate() != null) {
+            taxRateField.setText(selected.getTaxRate().toPlainString());
+            updateTotalTaxPreview();
+        }
+    }
+
+    private void selectTaxTypeForRate(BigDecimal rate) {
+        if (rate == null || taxTypeCombo == null) {
+            return;
+        }
+        for (int i = 0; i < taxTypeCombo.getItemCount(); i++) {
+            Tax tax = taxTypeCombo.getItemAt(i);
+            if (tax != null && tax.getTaxRate() != null && rate.compareTo(tax.getTaxRate()) == 0) {
+                taxTypeCombo.setSelectedItem(tax);
+                return;
+            }
+        }
+        taxTypeCombo.setSelectedItem(null);
+    }
+
+    private void applyReadOnly() {
+        itemNameField.setEditable(false);
+        itemNameField.setFocusable(false);
+        categoryField.setEditable(false);
+        categoryField.setFocusable(false);
+        descriptionArea.setEditable(false);
+        descriptionArea.setFocusable(false);
+        quantityField.setEditable(false);
+        quantityField.setFocusable(false);
+        unitPriceField.setEditable(false);
+        unitPriceField.setFocusable(false);
+        countryField.setEditable(false);
+        countryField.setFocusable(false);
+        importerNameField.setEditable(false);
+        importerNameField.setFocusable(false);
+        taxTypeCombo.setEnabled(false);
+        taxRateField.setEditable(false);
+        taxRateField.setFocusable(false);
+        importDateField.setEditable(false);
+        importDateField.setFocusable(false);
+        statusComboBox.setEnabled(false);
+
+        resetButton.setVisible(false);
+        saveButton.setVisible(false);
+        cancelButton.setText("Close");
     }
 
     @FunctionalInterface

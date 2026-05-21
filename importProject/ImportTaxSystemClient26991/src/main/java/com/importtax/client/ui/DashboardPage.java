@@ -1,6 +1,7 @@
 package com.importtax.client.ui;
 
 import com.importtax.client.rmi.RmiConnection;
+import com.importtax.client.util.CurrentSession;
 import com.importtax.client.util.TableFormatUtil;
 import com.importtax.client.util.UIConstants;
 import com.importtax.server.model.ImportStatusCounts;
@@ -358,19 +359,35 @@ public class DashboardPage extends JPanel {
     }
 
     private JPanel buildQuickActions() {
-        JPanel row = new JPanel(new GridLayout(1, 4, 12, 0));
+        JPanel row = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
         row.setOpaque(false);
-        Object[][] actions = {
-                {"New Import", UIConstants.PRIMARY_COLOR, AppShell.PAGE_IMPORTS},
-                {"View Reports", UIConstants.INFO_COLOR, AppShell.PAGE_REPORTS},
-                {"Process Payment", UIConstants.SUCCESS_COLOR, AppShell.PAGE_PAYMENTS},
-                {"User Management", UIConstants.ACCENT_COLOR, AppShell.PAGE_USERS},
-        };
-        for (Object[] a : actions) {
-            JButton btn = actionBtn((String) a[0], (Color) a[1]);
-            btn.addActionListener(e -> shell.navigate((String) a[2]));
+
+        // "New Import" - only for Admin and Customs Officer (not Finance Officer)
+        if (!CurrentSession.isFinanceOfficer()) {
+            JButton btn = actionBtn("New Import", UIConstants.PRIMARY_COLOR);
+            btn.addActionListener(e -> shell.navigate(AppShell.PAGE_IMPORTS));
             row.add(btn);
         }
+
+        // "View Reports" - visible for all
+        JButton reportBtn = actionBtn("View Reports", UIConstants.INFO_COLOR);
+        reportBtn.addActionListener(e -> shell.navigate(AppShell.PAGE_REPORTS));
+        row.add(reportBtn);
+
+        // "Process Payment" - not visible for Customs Officer
+        if (!CurrentSession.isCustomsOfficer()) {
+            JButton btn = actionBtn("Process Payment", UIConstants.SUCCESS_COLOR);
+            btn.addActionListener(e -> shell.navigate(AppShell.PAGE_PAYMENTS));
+            row.add(btn);
+        }
+
+        // "User Management" - only for Admin
+        if (CurrentSession.isAdmin()) {
+            JButton btn = actionBtn("User Management", UIConstants.ACCENT_COLOR);
+            btn.addActionListener(e -> shell.navigate(AppShell.PAGE_USERS));
+            row.add(btn);
+        }
+
         return row;
     }
 
@@ -418,7 +435,7 @@ public class DashboardPage extends JPanel {
         };
         b.setFont(UIConstants.FONT_BUTTON);
         b.setForeground(Color.WHITE);
-        b.setPreferredSize(new Dimension(0, 44));
+        b.setPreferredSize(new Dimension(180, 44));
         b.setContentAreaFilled(false);
         b.setBorderPainted(false);
         b.setFocusPainted(false);

@@ -95,7 +95,7 @@ public class ImportItemPage extends JPanel {
         card.setOpaque(false);
 
         JPanel toolbar = new JPanel(new MigLayout("insets 0, fillx",
-            "[grow][130!][100!][130!][90!][90!]", "[40!]"));
+            "[grow][130!]12[]12[]12[]", "[40!]"));
         toolbar.setOpaque(false);
 
         searchField = styledField();
@@ -118,9 +118,13 @@ public class ImportItemPage extends JPanel {
         deleteButton.addActionListener(e  -> deleteSelected());
         refreshButton.addActionListener(e -> loadItems());
 
-        toolbar.add(addButton,   "h 40!");
-        toolbar.add(editButton,  "h 40!");
-        toolbar.add(deleteButton,"h 40!");
+        if (!CurrentSession.isFinanceOfficer()) {
+            toolbar.add(addButton,   "h 40!");
+            toolbar.add(editButton,  "h 40!");
+        }
+        if (CurrentSession.isAdmin()) {
+            toolbar.add(deleteButton,"h 40!");
+        }
         card.add(toolbar, "growx, wrap, gapbottom 12");
 
         tableModel = new DefaultTableModel(new Object[]{
@@ -173,7 +177,6 @@ public class ImportItemPage extends JPanel {
         }
         itemTable.getColumnModel().getColumn(9).setCellRenderer(TableFormatUtil.statusRenderer());
         TableFormatUtil.applyCurrencyColumn(itemTable, 4);
-        TableFormatUtil.applyCurrencyColumn(itemTable, 5);
         TableFormatUtil.applyCurrencyColumn(itemTable, 6);
         TableFormatUtil.applyDateColumn(itemTable, 10);
 
@@ -218,7 +221,12 @@ public class ImportItemPage extends JPanel {
         ImportItem sel = selected();
         if (sel == null) { status("Select an item to edit", UIConstants.WARNING_COLOR); return; }
         if (!serviceOk()) return;
-        ImportItemDialog d = new ImportItemDialog(shell, sel);
+        if (CurrentSession.isFinanceOfficer()) {
+            ImportItemDialog d = new ImportItemDialog(shell, sel, true);
+            d.setVisible(true);
+            return;
+        }
+        ImportItemDialog d = new ImportItemDialog(shell, sel, false);
         d.setSaveAction((src, item) -> {
             boolean clearing = "CLEARED".equalsIgnoreCase(item.getStatus());
             mutate(src, "Updating...",
@@ -236,7 +244,7 @@ public class ImportItemPage extends JPanel {
             "Delete \"" + sel.getItemName() + "\"?", "Confirm Delete", JOptionPane.YES_NO_OPTION);
         if (ok != JOptionPane.YES_OPTION) return;
         mutate(null, "Deleting...", () -> {
-            importItemService.deleteItem(sel.getItemId());
+            importItemService.deleteItemSecure(sel.getItemId(), CurrentSession.getLoggedInUserId());
             return null;
         }, "Item deleted");
     }

@@ -42,4 +42,28 @@ public enum UserRole {
         }
         throw new IllegalArgumentException("Unknown role: " + displayName);
     }
+
+    /**
+     * Safely parses a string value (either name or display name) into a UserRole.
+     *
+     * @param role The role string to parse
+     * @return The corresponding UserRole, or null if null/empty/unknown
+     */
+    public static UserRole from(String role) {
+        if (role == null || role.isBlank()) {
+            return null;
+        }
+        String clean = role.trim();
+        for (UserRole r : UserRole.values()) {
+            if (r.name().equalsIgnoreCase(clean)) {
+                return r;
+            }
+        }
+        for (UserRole r : UserRole.values()) {
+            if (r.getDisplayName().equalsIgnoreCase(clean)) {
+                return r;
+            }
+        }
+        return null;
+    }
 }

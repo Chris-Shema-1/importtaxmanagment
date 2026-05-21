@@ -18,4 +18,8 @@ public interface UserService extends RemoteCrudService<User> {
     User getUserById(Long userId) throws RemoteException;
 
     User findByUsername(String username) throws RemoteException;
+
+    User updateUserSecure(User user, Long callerUserId) throws RemoteException;
+
+    void deleteUserSecure(Long userIdToDelete, Long callerUserId) throws RemoteException;
 }

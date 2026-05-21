@@ -9,7 +9,6 @@ import com.importtax.server.model.ImportItem;
 import com.importtax.server.model.User;
 import com.importtax.server.rmi.ImportItemService;
 import com.importtax.server.service.NotificationWorkflowService;
-import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -78,18 +77,27 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
     @Override
     public ImportItem saveItem(ImportItem item, Long userId) throws RemoteException {
         return execute("saveItem", () -> {
+            User caller = resolveUser(userId);
+            if (caller != null && "FINANCE_OFFICER".equalsIgnoreCase(caller.getRole())) {
+                throw new SecurityException("Access denied. Finance Officer cannot create import items.");
+            }
             validateItem(item, false);
             item.setItemId(null);
             normalizeAndCalculate(item);
-            item.setUser(resolveUser(userId));
+            item.setUser(caller);
             LOGGER.info("Saving import item '{}' for userId={}", item.getItemName(), userId);
-            return sanitize(importItemDao.saveItem(item));
+            ImportItem persisted = importItemDao.saveItem(item);
+            return sanitize(reloadItem(persisted.getItemId()).orElse(persisted));
         });
     }
 
     @Override
     public ImportItem updateItem(ImportItem item, Long userId) throws RemoteException {
         return execute("updateItem", () -> {
+            User caller = resolveUser(userId);
+            if (caller != null && "FINANCE_OFFICER".equalsIgnoreCase(caller.getRole())) {
+                throw new SecurityException("Access denied. Finance Officer cannot modify import items.");
+            }
             validateItem(item, true);
             ImportItem existingItem = importItemDao.findItemById(item.getItemId())
                     .orElseThrow(() -> new IllegalArgumentException("Import item not found"));
@@ -109,13 +117,14 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
             existingItem.setImportDate(item.getImportDate());
             existingItem.setStatus(item.getStatus());
             normalizeAndCalculate(existingItem);
-            if (userId != null) {
-                existingItem.setUser(resolveUser(userId));
+            if (caller != null) {
+                existingItem.setUser(caller);
             }
 
             LOGGER.info("Updating import item id={}, status transition {} -> {}",
                     existingItem.getItemId(), previousStatus, nextStatus);
-            ImportItem updated = sanitize(importItemDao.updateItem(existingItem));
+            importItemDao.updateItem(existingItem);
+            ImportItem updated = sanitize(reloadItem(existingItem.getItemId()).orElse(existingItem));
             if (ImportItemStatus.PAID.equals(previousStatus) && ImportItemStatus.CLEARED.equals(nextStatus)) {
                 notificationWorkflow.handleClearance(updated);
             }
@@ -136,6 +145,28 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
                 throw new IllegalArgumentException("CLEARED items cannot be deleted");
             }
             LOGGER.info("Deleting import item id={}", itemId);
+            importItemDao.deleteItem(item);
+            return null;
+        });
+    }
+
+    @Override
+    public void deleteItemSecure(Long itemId, Long callerUserId) throws RemoteException {
+        execute("deleteItemSecure", () -> {
+            User caller = resolveUser(callerUserId);
+            if (caller == null || !"ADMIN".equalsIgnoreCase(caller.getRole())) {
+                throw new SecurityException("Access denied. Administrator privileges required.");
+            }
+            if (itemId == null) {
+                throw new IllegalArgumentException("Import item ID is required");
+            }
+            ImportItem item = importItemDao.findItemById(itemId)
+                    .orElseThrow(() -> new IllegalArgumentException("Import item not found"));
+            if (ImportItemStatus.CLEARED.equals(ImportItemStatus.canonicalFromDatabase(item.getStatus()))) {
+                LOGGER.warn("Delete rejected for cleared import item id={}", itemId);
+                throw new IllegalArgumentException("CLEARED items cannot be deleted");
+            }
+            LOGGER.info("Deleting import item id={} securely via callerUserId={}", itemId, callerUserId);
             importItemDao.deleteItem(item);
             return null;
         });
@@ -302,9 +333,11 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
         }
 
         BigDecimal quantity = BigDecimal.valueOf(item.getQuantity());
+        // Single source of truth: scalar tax_rate on the item (not M:M appliedTaxes).
+        BigDecimal effectiveRate = item.getTaxRate();
         BigDecimal totalTax = quantity
                 .multiply(item.getUnitPrice())
-                .multiply(item.getTaxRate())
+                .multiply(effectiveRate)
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
         item.setUnitPrice(item.getUnitPrice().setScale(2, RoundingMode.HALF_UP));
         item.setTaxRate(item.getTaxRate().setScale(2, RoundingMode.HALF_UP));
@@ -324,17 +357,21 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
         return items;
     }
 
+    private java.util.Optional<ImportItem> reloadItem(Long itemId) {
+        if (itemId == null) {
+            return java.util.Optional.empty();
+        }
+        return importItemDao.findItemById(itemId);
+    }
+
     private ImportItem sanitize(ImportItem item) {
         if (item != null) {
-            // Initialize and sanitize user
             if (item.getUser() != null) {
                 item.getUser().setPassword(null);
                 item.getUser().setImportItems(null);
             }
-            // Initialize the lazy-loaded appliedTaxes collection
-            if (item.getAppliedTaxes() != null) {
-                Hibernate.initialize(item.getAppliedTaxes());
-            }
+            // Avoid lazy init / circular graphs over RMI — client uses tax_rate + total_tax columns only.
+            item.setAppliedTaxes(null);
         }
         return item;
     }

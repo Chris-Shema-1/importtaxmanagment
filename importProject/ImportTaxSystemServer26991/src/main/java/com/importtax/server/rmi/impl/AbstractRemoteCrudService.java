@@ -60,8 +60,16 @@ public abstract class AbstractRemoteCrudService<T> extends UnicastRemoteObject i
             return result;
         } catch (IllegalArgumentException exception) {
             logger.warn("{} operation '{}' rejected: {}", serviceName, operationName, exception.getMessage());
-            throw new RemoteException(exception.getMessage() != null
+            RemoteException remote = new RemoteException(exception.getMessage() != null
                     ? exception.getMessage() : "Invalid request.");
+            remote.initCause(exception);
+            throw remote;
+        } catch (SecurityException exception) {
+            logger.warn("{} operation '{}' denied: {}", serviceName, operationName, exception.getMessage());
+            RemoteException remote = new RemoteException(exception.getMessage() != null
+                    ? exception.getMessage() : "Access denied.");
+            remote.initCause(exception);
+            throw remote;
         } catch (RuntimeException exception) {
             logger.error("{} operation '{}' failed.", serviceName, operationName, exception);
             throw RemoteMessages.toRemoteException(operationName, exception);

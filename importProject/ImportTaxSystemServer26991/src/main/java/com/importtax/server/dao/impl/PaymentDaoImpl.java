@@ -20,10 +20,33 @@ public class PaymentDaoImpl extends GenericDaoImpl<Payment> implements PaymentDa
     }
 
     @Override
+    public List<Payment> findAll() {
+        return executeReadOnly(session -> session.createQuery(
+                        "select p from Payment p left join fetch p.invoice "
+                                + "order by p.paymentDate desc, p.paymentId desc",
+                        Payment.class)
+                .getResultList(), "findAll");
+    }
+
+    @Override
+    public Optional<Payment> findById(Long id) {
+        return executeReadOnly(session -> {
+            List<Payment> list = session.createQuery(
+                            "select p from Payment p left join fetch p.invoice where p.paymentId = :id",
+                            Payment.class)
+                    .setParameter("id", id)
+                    .setMaxResults(1)
+                    .getResultList();
+            return list.isEmpty() ? Optional.empty() : Optional.of(list.get(0));
+        }, "findById");
+    }
+
+    @Override
     public List<Payment> findByPaymentStatus(String paymentStatus) {
         return executeReadOnly(session -> {
             TypedQuery<Payment> query = session.createQuery(
-                    "select p from Payment p where p.paymentStatus = :paymentStatus order by p.paymentDate desc",
+                    "select p from Payment p left join fetch p.invoice "
+                            + "where p.paymentStatus = :paymentStatus order by p.paymentDate desc",
                     Payment.class);
             query.setParameter("paymentStatus", paymentStatus);
             return query.getResultList();
@@ -34,7 +57,8 @@ public class PaymentDaoImpl extends GenericDaoImpl<Payment> implements PaymentDa
     public Optional<Payment> findByInvoiceId(Long invoiceId) {
         return executeReadOnly(session -> {
             List<Payment> list = session.createQuery(
-                            "select p from Payment p where p.invoice.invoiceId = :invoiceId",
+                            "select p from Payment p left join fetch p.invoice "
+                                    + "where p.invoice.invoiceId = :invoiceId",
                             Payment.class)
                     .setParameter("invoiceId", invoiceId)
                     .setMaxResults(1)
