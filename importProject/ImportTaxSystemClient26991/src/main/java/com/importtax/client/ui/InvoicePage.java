@@ -219,8 +219,17 @@ public class InvoicePage extends JPanel {
         new SwingWorker<List<Invoice>, Void>() {
             protected List<Invoice> doInBackground() throws Exception { return invoiceService.findAll(); }
             protected void done() {
-                try { allItems = new ArrayList<>(get()); filter(); }
-                catch (Exception ex) { setStatus(rootMsg("Load failed", ex), UIConstants.ERROR_COLOR); }
+                try {
+                    allItems = new ArrayList<>(get());
+                    filter();
+                } catch (Exception ex) {
+                    Throwable root = ex;
+                    while (root.getCause() != null) {
+                        root = root.getCause();
+                    }
+                    logger.error("Invoice findAll failed: {}", root.getMessage(), ex);
+                    setStatus(rootMsg("Load failed", ex), UIConstants.ERROR_COLOR);
+                }
             }
         }.execute();
     }

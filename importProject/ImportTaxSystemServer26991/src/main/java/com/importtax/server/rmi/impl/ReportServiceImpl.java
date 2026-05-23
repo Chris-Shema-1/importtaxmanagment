@@ -19,7 +19,6 @@ import com.importtax.server.model.ReportSummary;
 import com.importtax.server.model.ReportTableRow;
 import com.importtax.server.rmi.ReportService;
 import com.importtax.server.util.RemoteMessages;
-import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -150,7 +149,6 @@ public class ReportServiceImpl extends UnicastRemoteObject implements ReportServ
                     itemName = safe(item.getItemName());
                     status = safe(item.getStatus());
                     if (item.getUser() != null) {
-                        Hibernate.initialize(item.getUser());
                         userDisplay = safe(item.getUser().getUsername());
                     } else {
                         userDisplay = safe(item.getImporterName());
@@ -172,17 +170,24 @@ public class ReportServiceImpl extends UnicastRemoteObject implements ReportServ
         if (invoice == null) {
             return;
         }
-        if (invoice.getImportItem() != null) {
-            Hibernate.initialize(invoice.getImportItem());
-            if (invoice.getImportItem().getUser() != null) {
-                Hibernate.initialize(invoice.getImportItem().getUser());
-            }
+        ImportItem item = invoice.getImportItem();
+        if (item != null && item.getUser() != null) {
+            item.getUser().setPassword(null);
+            item.getUser().setImportItems(null);
+        }
+        if (item != null) {
+            item.setAppliedTaxes(null);
         }
     }
 
     private void initializePayment(Payment payment) {
-        if (payment != null && payment.getInvoice() != null) {
-            Hibernate.initialize(payment.getInvoice());
+        if (payment == null) {
+            return;
+        }
+        Invoice invoice = payment.getInvoice();
+        if (invoice != null) {
+            invoice.setImportItem(null);
+            invoice.setPayment(null);
         }
     }
 

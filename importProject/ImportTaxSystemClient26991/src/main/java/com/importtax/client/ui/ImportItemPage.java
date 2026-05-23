@@ -265,7 +265,16 @@ public class ImportItemPage extends JPanel {
                     allItems = new ArrayList<>(get());
                     applyFilter();
                 } catch (Exception ex) {
-                    status(UserMessageUtil.friendly(ex, "Unable to load import items."), UIConstants.ERROR_COLOR);
+                    Throwable root = ex;
+                    while (root.getCause() != null) {
+                        root = root.getCause();
+                    }
+                    logger.error("Import items load failed: {}", root.getMessage(), ex);
+                    String msg = UserMessageUtil.friendly(ex,
+                            "Unable to load import items. Please try again.");
+                    status(msg, UIConstants.ERROR_COLOR);
+                    JOptionPane.showMessageDialog(shell, msg, UIConstants.APP_NAME,
+                            JOptionPane.ERROR_MESSAGE);
                 }
             }
         }.execute();

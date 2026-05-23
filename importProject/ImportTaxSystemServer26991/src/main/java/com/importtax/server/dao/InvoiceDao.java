@@ -1,5 +1,6 @@
 package com.importtax.server.dao;
 
+import com.importtax.server.model.ImportItem;
 import com.importtax.server.model.Invoice;
 import com.importtax.server.model.MonthlyTaxSummary;
 
@@ -14,6 +15,13 @@ public interface InvoiceDao extends GenericDao<Invoice> {
 
     /** Invoice number for an import item, if an invoice exists. */
     Optional<String> findInvoiceNumberByImportItemId(Long itemId);
+
+    /**
+     * Creates and persists an invoice linked to the import item when none exists yet.
+     *
+     * @return the new invoice, or empty if an invoice already exists for the item
+     */
+    Optional<Invoice> createInvoiceForImportItemIfAbsent(ImportItem importItem);
 
     long countInvoices();
 

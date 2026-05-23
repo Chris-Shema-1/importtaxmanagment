@@ -4,7 +4,6 @@ import com.importtax.server.dao.InvoiceDao;
 import com.importtax.server.dao.impl.InvoiceDaoImpl;
 import com.importtax.server.model.Invoice;
 import com.importtax.server.rmi.InvoiceService;
-import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,42 +27,11 @@ public class InvoiceServiceImpl extends AbstractRemoteCrudService<Invoice> imple
 
     @Override
     public Invoice findById(Long id) throws RemoteException {
-        return execute("findById", () -> {
-            Invoice invoice = invoiceDao.findById(id).orElse(null);
-            if (invoice != null) {
-                initializeLazyFields(invoice);
-            }
-            return invoice;
-        });
+        return execute("findById", () -> invoiceDao.findById(id).orElse(null));
     }
 
     @Override
     public List<Invoice> findAll() throws RemoteException {
-        return execute("findAll", () -> {
-            List<Invoice> invoices = invoiceDao.findAll();
-            for (Invoice invoice : invoices) {
-                initializeLazyFields(invoice);
-            }
-            return invoices;
-        });
-    }
-
-    /**
-     * Initialize lazy-loaded fields before RMI serialization
-     */
-    private void initializeLazyFields(Invoice invoice) {
-        if (invoice == null) {
-            return;
-        }
-
-        // Initialize the lazy-loaded importItem
-        if (invoice.getImportItem() != null) {
-            Hibernate.initialize(invoice.getImportItem());
-        }
-
-        // Initialize the lazy-loaded payment
-        if (invoice.getPayment() != null) {
-            Hibernate.initialize(invoice.getPayment());
-        }
+        return execute("findAll", invoiceDao::findAll);
     }
 }

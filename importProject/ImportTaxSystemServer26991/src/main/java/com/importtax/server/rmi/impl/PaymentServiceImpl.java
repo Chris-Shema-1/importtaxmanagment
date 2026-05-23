@@ -147,43 +147,61 @@ public class PaymentServiceImpl extends AbstractRemoteCrudService<Payment> imple
     }
 
     private void promoteImportItemIfCompleted(Payment persisted) {
-        if (persisted == null || persisted.getInvoice() == null || persisted.getInvoice().getInvoiceId() == null) {
-            return;
-        }
-        if (!PAYMENT_COMPLETED.equalsIgnoreCase(persisted.getPaymentStatus())) {
+        if (persisted == null) {
             return;
         }
 
-        Long invoiceId = persisted.getInvoice().getInvoiceId();
+        Payment payment = persisted.getPaymentId() != null
+                ? paymentDao.findById(persisted.getPaymentId()).orElse(persisted)
+                : persisted;
+
+        if (!PAYMENT_COMPLETED.equalsIgnoreCase(payment.getPaymentStatus())) {
+            return;
+        }
+
+        Invoice invoiceRef = payment.getInvoice();
+        if (invoiceRef == null || invoiceRef.getInvoiceId() == null) {
+            LOGGER.warn("Completed payment id={} has no invoice reference; cannot promote import status",
+                    payment.getPaymentId());
+            return;
+        }
+
+        Long invoiceId = invoiceRef.getInvoiceId();
         Optional<Long> itemIdOpt = invoiceDao.findImportItemIdByInvoiceId(invoiceId);
         if (itemIdOpt.isEmpty()) {
-            LOGGER.debug("No import item linked to invoice id={}, skipping PAID promotion", invoiceId);
+            LOGGER.warn("No import item linked to invoice id={}; import status will not become PAID", invoiceId);
             return;
         }
 
-        importItemDao.findItemById(itemIdOpt.get()).ifPresent(item -> {
-            String current = ImportItemStatus.canonicalFromDatabase(item.getStatus());
-            if (ImportItemStatus.PAID.equals(current) || ImportItemStatus.CLEARED.equals(current)) {
-                LOGGER.debug("Import item id={} already at {}, skipping promotion", item.getItemId(), current);
-                return;
-            }
-            if (ImportItemStatus.PENDING.equals(current) || ImportItemStatus.HOLD.equals(current)) {
-                item.setStatus(ImportItemStatus.PAID);
-                importItemDao.updateItem(item);
-                LOGGER.info("Import item id={} status {} -> PAID after payment id={}",
-                        item.getItemId(), current, persisted.getPaymentId());
-                importItemDao.findItemById(item.getItemId()).ifPresent(refreshed -> {
-                    if (refreshed.getUser() != null) {
-                        Hibernate.initialize(refreshed.getUser());
-                    }
-                    invoiceDao.findById(invoiceId).ifPresent(invoice ->
-                            notificationWorkflow.handlePaymentSuccess(persisted, invoice, refreshed));
-                });
-            } else {
-                LOGGER.warn("Import item id={} has unexpected status {}, not promoting to PAID",
-                        item.getItemId(), current);
-            }
-        });
+        ImportItem item = importItemDao.findItemById(itemIdOpt.get()).orElse(null);
+        if (item == null) {
+            LOGGER.warn("Import item id={} not found for invoice id={}", itemIdOpt.get(), invoiceId);
+            return;
+        }
+
+        String current = ImportItemStatus.canonicalFromDatabase(item.getStatus());
+        if (ImportItemStatus.PAID.equals(current) || ImportItemStatus.CLEARED.equals(current)) {
+            LOGGER.debug("Import item id={} already at {}, skipping promotion", item.getItemId(), current);
+            return;
+        }
+
+        if (!ImportItemStatus.PENDING.equals(current) && !ImportItemStatus.HOLD.equals(current)) {
+            LOGGER.warn("Import item id={} has unexpected status {}, not promoting to PAID",
+                    item.getItemId(), current);
+            return;
+        }
+
+        item.setStatus(ImportItemStatus.PAID);
+        importItemDao.updateItem(item);
+        LOGGER.info("Import item id={} status {} -> PAID after payment id={}",
+                item.getItemId(), current, payment.getPaymentId());
+
+        ImportItem refreshed = importItemDao.findItemById(item.getItemId()).orElse(item);
+        if (refreshed.getUser() != null) {
+            Hibernate.initialize(refreshed.getUser());
+        }
+        Invoice invoice = invoiceDao.findById(invoiceId).orElse(invoiceRef);
+        notificationWorkflow.handlePaymentSuccess(payment, invoice, refreshed);
     }
 
     @Override

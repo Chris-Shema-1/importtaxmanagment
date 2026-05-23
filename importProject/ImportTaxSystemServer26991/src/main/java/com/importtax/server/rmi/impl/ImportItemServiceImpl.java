@@ -2,10 +2,13 @@ package com.importtax.server.rmi.impl;
 
 import com.importtax.server.constants.ImportItemStatus;
 import com.importtax.server.dao.ImportItemDao;
+import com.importtax.server.dao.InvoiceDao;
 import com.importtax.server.dao.UserDao;
 import com.importtax.server.dao.impl.ImportItemDaoImpl;
+import com.importtax.server.dao.impl.InvoiceDaoImpl;
 import com.importtax.server.dao.impl.UserDaoImpl;
 import com.importtax.server.model.ImportItem;
+import com.importtax.server.model.Invoice;
 import com.importtax.server.model.User;
 import com.importtax.server.rmi.ImportItemService;
 import com.importtax.server.service.NotificationWorkflowService;
@@ -17,31 +20,39 @@ import java.math.RoundingMode;
 import java.rmi.RemoteException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem> implements ImportItemService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ImportItemServiceImpl.class);
 
     private final ImportItemDao importItemDao;
+    private final InvoiceDao invoiceDao;
     private final UserDao userDao;
     private final NotificationWorkflowService notificationWorkflow;
 
     public ImportItemServiceImpl() throws RemoteException {
-        this(new ImportItemDaoImpl(), new UserDaoImpl(), new NotificationWorkflowService());
+        this(new ImportItemDaoImpl(), new InvoiceDaoImpl(), new UserDaoImpl(), new NotificationWorkflowService());
     }
 
     public ImportItemServiceImpl(ImportItemDao importItemDao) throws RemoteException {
-        this(importItemDao, new UserDaoImpl(), new NotificationWorkflowService());
+        this(importItemDao, new InvoiceDaoImpl(), new UserDaoImpl(), new NotificationWorkflowService());
     }
 
     public ImportItemServiceImpl(ImportItemDao importItemDao, UserDao userDao) throws RemoteException {
-        this(importItemDao, userDao, new NotificationWorkflowService());
+        this(importItemDao, new InvoiceDaoImpl(), userDao, new NotificationWorkflowService());
     }
 
     public ImportItemServiceImpl(ImportItemDao importItemDao, UserDao userDao,
                                  NotificationWorkflowService notificationWorkflow) throws RemoteException {
+        this(importItemDao, new InvoiceDaoImpl(), userDao, notificationWorkflow);
+    }
+
+    public ImportItemServiceImpl(ImportItemDao importItemDao, InvoiceDao invoiceDao, UserDao userDao,
+                                 NotificationWorkflowService notificationWorkflow) throws RemoteException {
         super(importItemDao, LOGGER, "ImportItemService");
         this.importItemDao = importItemDao;
+        this.invoiceDao = invoiceDao;
         this.userDao = userDao;
         this.notificationWorkflow = notificationWorkflow;
     }
@@ -87,8 +98,42 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
             item.setUser(caller);
             LOGGER.info("Saving import item '{}' for userId={}", item.getItemName(), userId);
             ImportItem persisted = importItemDao.saveItem(item);
-            return sanitize(reloadItem(persisted.getItemId()).orElse(persisted));
+            ensureInvoiceForNewItem(persisted);
+            return reloadItem(persisted.getItemId()).orElse(persisted);
         });
+    }
+
+    /**
+     * Auto-generates a linked invoice for a newly created import item (create only, not updates).
+     */
+    private void ensureInvoiceForNewItem(ImportItem persisted) {
+        if (persisted == null || persisted.getItemId() == null) {
+            throw new IllegalStateException("Import item was not persisted correctly");
+        }
+        try {
+            Optional<Invoice> created = invoiceDao.createInvoiceForImportItemIfAbsent(persisted);
+            if (created.isPresent()) {
+                LOGGER.info("Auto-generated invoice {} for import item id={}",
+                        created.get().getInvoiceNumber(), persisted.getItemId());
+            } else {
+                LOGGER.debug("Invoice already exists for import item id={}, skipping generation",
+                        persisted.getItemId());
+            }
+        } catch (RuntimeException ex) {
+            LOGGER.error("Invoice generation failed for import item id={}", persisted.getItemId(), ex);
+            rollbackFailedImport(persisted);
+            throw new IllegalStateException(
+                    "Could not create invoice for the import item. The import was not saved.", ex);
+        }
+    }
+
+    private void rollbackFailedImport(ImportItem persisted) {
+        try {
+            importItemDao.deleteItem(persisted);
+        } catch (RuntimeException deleteEx) {
+            LOGGER.error("Could not roll back import item id={} after invoice failure",
+                    persisted.getItemId(), deleteEx);
+        }
     }
 
     @Override
@@ -124,7 +169,7 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
             LOGGER.info("Updating import item id={}, status transition {} -> {}",
                     existingItem.getItemId(), previousStatus, nextStatus);
             importItemDao.updateItem(existingItem);
-            ImportItem updated = sanitize(reloadItem(existingItem.getItemId()).orElse(existingItem));
+            ImportItem updated = reloadItem(existingItem.getItemId()).orElse(existingItem);
             if (ImportItemStatus.PAID.equals(previousStatus) && ImportItemStatus.CLEARED.equals(nextStatus)) {
                 notificationWorkflow.handleClearance(updated);
             }
@@ -174,7 +219,7 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
 
     @Override
     public List<ImportItem> findAllItems() throws RemoteException {
-        return execute("findAllItems", () -> sanitize(importItemDao.findAllItems()));
+        return execute("findAllItems", importItemDao::findAllItems);
     }
 
     @Override
@@ -183,20 +228,20 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
             if (itemId == null) {
                 throw new IllegalArgumentException("Import item ID is required");
             }
-            return sanitize(importItemDao.findItemById(itemId).orElse(null));
+            return importItemDao.findItemById(itemId).orElse(null);
         });
     }
 
     @Override
     public List<ImportItem> searchItemsByName(String itemName) throws RemoteException {
-        return execute("searchItemsByName", () -> sanitize(importItemDao.searchItemsByName(itemName)));
+        return execute("searchItemsByName", () -> importItemDao.searchItemsByName(itemName));
     }
 
     @Override
     public List<ImportItem> findItemsByStatus(String status) throws RemoteException {
         return execute("findItemsByStatus", () -> {
             String normalizedStatus = normalizeStatus(status);
-            return sanitize(importItemDao.findItemsByStatus(normalizedStatus));
+            return importItemDao.findItemsByStatus(normalizedStatus);
         });
     }
 
@@ -206,7 +251,7 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
             if (userId == null) {
                 throw new IllegalArgumentException("User ID is required");
             }
-            return sanitize(importItemDao.findItemsByUser(userId));
+            return importItemDao.findItemsByUser(userId);
         });
     }
 
@@ -352,28 +397,11 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
                 .orElseThrow(() -> new IllegalArgumentException("Logged-in user was not found"));
     }
 
-    private List<ImportItem> sanitize(List<ImportItem> items) {
-        items.forEach(this::sanitize);
-        return items;
-    }
-
     private java.util.Optional<ImportItem> reloadItem(Long itemId) {
         if (itemId == null) {
             return java.util.Optional.empty();
         }
         return importItemDao.findItemById(itemId);
-    }
-
-    private ImportItem sanitize(ImportItem item) {
-        if (item != null) {
-            if (item.getUser() != null) {
-                item.getUser().setPassword(null);
-                item.getUser().setImportItems(null);
-            }
-            // Avoid lazy init / circular graphs over RMI — client uses tax_rate + total_tax columns only.
-            item.setAppliedTaxes(null);
-        }
-        return item;
     }
 
     private String normalizeStatus(String status) {
