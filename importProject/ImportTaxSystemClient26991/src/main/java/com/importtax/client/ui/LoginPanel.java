@@ -4,6 +4,7 @@ import com.importtax.client.rmi.RmiConnection;
 import com.importtax.client.util.RoundedButton;
 import com.importtax.client.util.CurrentSession;
 import com.importtax.client.util.UIConstants;
+import com.importtax.client.util.UIStyleUtil;
 import com.importtax.server.model.User;
 import com.importtax.server.rmi.OtpService;
 import com.importtax.server.rmi.UserService;
@@ -64,10 +65,10 @@ public class LoginPanel extends JPanel {
         outer.setBackground(UIConstants.BACKGROUND_COLOR);
 
         JPanel form = new JPanel(new MigLayout(
-            "insets 48 52 36 52, fillx",
+            "insets 40 44 32 44, fillx",
             "[fill]", "[]6[]32[]6[]18[]6[]16[]10[]20[]16[]"
         ));
-        form.setBackground(UIConstants.BACKGROUND_COLOR);
+        form.setOpaque(false);
 
         JLabel heading = new JLabel("Welcome back");
         heading.setFont(new Font("Segoe UI", Font.BOLD, 28));
@@ -109,8 +110,7 @@ public class LoginPanel extends JPanel {
         statusLabel.setForeground(UIConstants.ERROR_COLOR);
         form.add(statusLabel, "wrap");
 
-        loginButton = new RoundedButton("Sign In");
-        loginButton.setFont(UIConstants.FONT_BUTTON);
+        loginButton = UIStyleUtil.primaryButton("Sign In");
         loginButton.addActionListener(e -> handleLogin());
         form.add(loginButton, "h 48!, wrap");
 
@@ -126,8 +126,9 @@ public class LoginPanel extends JPanel {
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.fill = GridBagConstraints.BOTH;
-        gbc.weightx = 1; gbc.weighty = 1;
-        outer.add(form, gbc);
+        gbc.weightx = 1;
+        gbc.weighty = 1;
+        outer.add(UIStyleUtil.authCard(form), gbc);
         return outer;
     }
 
@@ -157,38 +158,11 @@ public class LoginPanel extends JPanel {
     }
 
     private JTextField styledTextField() {
-        JTextField f = new JTextField();
-        applyFieldStyle(f);
-        return f;
+        return UIStyleUtil.styledField("");
     }
 
     private JPasswordField styledPasswordField() {
-        JPasswordField f = new JPasswordField();
-        f.setEchoChar('●');
-        applyFieldStyle(f);
-        return f;
-    }
-
-    private void applyFieldStyle(JTextField f) {
-        f.setFont(UIConstants.FONT_REGULAR);
-        f.setBackground(UIConstants.PANEL_COLOR);
-        f.setForeground(UIConstants.TEXT_COLOR);
-        f.setCaretColor(UIConstants.PRIMARY_COLOR);
-        f.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createLineBorder(UIConstants.BORDER_COLOR, 1, true),
-            new EmptyBorder(10, 14, 10, 14)));
-        f.addFocusListener(new FocusAdapter() {
-            @Override public void focusGained(FocusEvent e) {
-                f.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(UIConstants.PRIMARY_COLOR, 2, true),
-                    new EmptyBorder(9, 13, 9, 13)));
-            }
-            @Override public void focusLost(FocusEvent e) {
-                f.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createLineBorder(UIConstants.BORDER_COLOR, 1, true),
-                    new EmptyBorder(10, 14, 10, 14)));
-            }
-        });
+        return UIStyleUtil.styledPasswordField();
     }
 
     private JButton ghostButton(String icon) {

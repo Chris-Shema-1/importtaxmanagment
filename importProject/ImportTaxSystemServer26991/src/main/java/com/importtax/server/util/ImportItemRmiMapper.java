@@ -20,6 +20,12 @@ public final class ImportItemRmiMapper {
         if (managed == null) {
             return null;
         }
+        User safeUser = null;
+        try {
+            safeUser = toSafeUser(managed.getUser());
+        } catch (RuntimeException ex) {
+            // Never fail the list load because of a lazy user proxy
+        }
         ImportItem safe = new ImportItem(
                 managed.getItemName(),
                 managed.getCategory(),
@@ -32,7 +38,7 @@ public final class ImportItemRmiMapper {
                 managed.getTotalTax(),
                 managed.getImportDate(),
                 managed.getStatus(),
-                toSafeUser(managed.getUser()));
+                safeUser);
         safe.setItemId(managed.getItemId());
         safe.setAppliedTaxes(new ArrayList<>());
         return safe;

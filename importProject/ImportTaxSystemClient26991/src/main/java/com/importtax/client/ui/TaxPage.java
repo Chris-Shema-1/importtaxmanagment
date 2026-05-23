@@ -4,6 +4,7 @@ import com.importtax.client.rmi.RmiConnection;
 import com.importtax.client.util.CurrentSession;
 import com.importtax.client.util.RoundedButton;
 import com.importtax.client.util.UIConstants;
+import com.importtax.client.util.UIStyleUtil;
 import com.importtax.server.model.Tax;
 import com.importtax.server.rmi.TaxService;
 import java.awt.*;
@@ -259,120 +260,45 @@ public class TaxPage extends JPanel {
     private boolean contains(String v, String t) { return v != null && v.toLowerCase(Locale.ROOT).contains(t); }
     private String rootMsg(String fb, Exception ex) { Throwable c = ex.getCause() != null ? ex.getCause() : ex; return c.getMessage() != null ? c.getMessage() : fb; }
 
-    // ── Shared UI helpers ──────────────────────────────────────────────────
+    // ── Shared UI helpers (delegates to UIStyleUtil) ───────────────────────
     static JTextField styledField(String placeholder) {
-        JTextField f = new JTextField();
-        f.setFont(UIConstants.FONT_REGULAR);
-        f.setBackground(UIConstants.PANEL_COLOR);
-        f.setForeground(UIConstants.TEXT_COLOR);
-        f.setCaretColor(UIConstants.PRIMARY_COLOR);
-        f.putClientProperty("JTextField.placeholderText", placeholder);
-        f.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(UIConstants.BORDER_COLOR, 1, true),
-            new EmptyBorder(8, 12, 8, 12)));
-        return f;
+        return UIStyleUtil.styledField(placeholder);
     }
 
     static RoundedButton btn(String text, Color color) {
-        RoundedButton b = new RoundedButton(text);
-        b.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        b.setStateColors(color, color.brighter(), color.darker());
-        return b;
+        return UIStyleUtil.button(text, color);
     }
 
     static JTable styledTable(DefaultTableModel model) {
-        JTable t = new JTable(model);
-        t.setFont(UIConstants.FONT_REGULAR);
-        t.setRowHeight(42);
-        t.setGridColor(UIConstants.withAlpha(UIConstants.BORDER_COLOR, 80));
-        t.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-        t.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
-        t.setRowSorter(new TableRowSorter<>(model));
-        t.setFillsViewportHeight(true);
-        t.setBackground(UIConstants.PANEL_COLOR);
-        t.setForeground(UIConstants.TEXT_COLOR);
-        t.setSelectionBackground(UIConstants.PRIMARY_COLOR);
-        t.setSelectionForeground(Color.WHITE);
-        t.setShowVerticalLines(false);
-        t.setIntercellSpacing(new Dimension(0, 0));
-        DefaultTableCellRenderer r = new DefaultTableCellRenderer() {
-            public Component getTableCellRendererComponent(JTable tbl, Object v, boolean sel, boolean foc, int row, int col) {
-                super.getTableCellRendererComponent(tbl, v, sel, foc, row, col);
-                setBorder(new EmptyBorder(0, 12, 0, 12));
-                setBackground(sel ? UIConstants.PRIMARY_COLOR : (row % 2 == 0 ? UIConstants.PANEL_COLOR : new Color(235, 238, 243)));
-                setForeground(sel ? Color.WHITE : UIConstants.TEXT_COLOR);
-                return this;
-            }
-        };
-        for (int i = 0; i < model.getColumnCount(); i++) t.getColumnModel().getColumn(i).setCellRenderer(r);
-        JTableHeader th = t.getTableHeader();
-        th.setFont(new Font("Segoe UI", Font.BOLD, 12));
-        th.setBackground(new Color(235, 238, 243));
-        th.setForeground(UIConstants.TEXT_SECONDARY);
-        th.setReorderingAllowed(false);
-        th.setPreferredSize(new Dimension(0, 38));
-        return t;
+        return UIStyleUtil.styledTable(model);
     }
 
     static JScrollPane styledScroll(JTable t) {
-        JScrollPane s = new JScrollPane(t);
-        s.setBorder(BorderFactory.createMatteBorder(1, 0, 1, 0, UIConstants.BORDER_COLOR));
-        s.getViewport().setBackground(UIConstants.PANEL_COLOR);
-        s.getVerticalScrollBar().setUnitIncrement(18);
-        s.getHorizontalScrollBar().setUnitIncrement(18);
-        return s;
+        return UIStyleUtil.styledScroll(t);
     }
 
     static JLabel statusLabel() {
-        JLabel l = new JLabel(" ");
-        l.setFont(UIConstants.FONT_SMALL);
-        l.setForeground(UIConstants.TEXT_SECONDARY);
-        return l;
+        return UIStyleUtil.statusLabel();
     }
 
     static void addRow(JPanel form, String label, JComponent field) {
-        JLabel l = new JLabel(label);
-        l.setFont(UIConstants.FONT_LABEL);
-        l.setForeground(UIConstants.TEXT_SECONDARY);
-        form.add(l, "aligny center, gapy 8 0");
-        form.add(field, "h 40!, growx, wrap, gapbottom 4");
+        UIStyleUtil.addFormRow(form, label, field);
     }
 
     static JComboBox<String> styledCombo(String[] items) {
-        JComboBox<String> cb = new JComboBox<>(items);
-        cb.setFont(UIConstants.FONT_REGULAR);
-        cb.setBackground(UIConstants.PANEL_COLOR);
-        cb.setForeground(UIConstants.TEXT_COLOR);
-        cb.setBorder(BorderFactory.createLineBorder(UIConstants.BORDER_COLOR, 1, true));
-        return cb;
+        return UIStyleUtil.styledCombo(items);
     }
 
     static JDialog styledDialog(JFrame owner, String title, int w, int h) {
-        JDialog dlg = new JDialog(owner, title, true);
-        dlg.setSize(w, h);
-        dlg.setLocationRelativeTo(owner);
-        dlg.getContentPane().setBackground(UIConstants.BACKGROUND_COLOR);
-        return dlg;
+        return UIStyleUtil.styledDialog(owner, title, w, h);
     }
 
     static JPanel dialogForm() {
-        JPanel form = new JPanel(new MigLayout("insets 24 28 8 28, fillx", "[150!][grow]", ""));
-        form.setBackground(UIConstants.BACKGROUND_COLOR);
-        return form;
+        return UIStyleUtil.dialogForm();
     }
 
     static JPanel dialogButtons(JFrame owner, JDialog dlg, Runnable onSave, String saveLabel) {
-        JPanel btns = new JPanel(new MigLayout("insets 12 28 20 28, fillx", "[grow][110!][110!]", "[]"));
-        btns.setBackground(UIConstants.BACKGROUND_COLOR);
-        btns.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, UIConstants.BORDER_COLOR));
-        RoundedButton cancel = btn("Cancel", UIConstants.BORDER_COLOR);
-        RoundedButton save   = btn(saveLabel, UIConstants.SUCCESS_COLOR);
-        cancel.addActionListener(e -> dlg.dispose());
-        save.addActionListener(e -> onSave.run());
-        btns.add(new JLabel(), "grow");
-        btns.add(cancel, "h 42!");
-        btns.add(save,   "h 42!");
-        return btns;
+        return UIStyleUtil.dialogButtons(dlg, onSave, saveLabel);
     }
 
     @FunctionalInterface

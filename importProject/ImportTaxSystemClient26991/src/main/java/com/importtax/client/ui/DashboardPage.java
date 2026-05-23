@@ -87,6 +87,7 @@ public class DashboardPage extends JPanel {
         header.setOpaque(false);
         header.add(greeting, "grow");
         refreshBtn = TaxPage.btn("Refresh", UIConstants.PRIMARY_COLOR);
+        refreshBtn.setPreferredSize(new Dimension(120, UIConstants.BUTTON_HEIGHT));
         refreshBtn.addActionListener(e -> loadDashboard());
         header.add(refreshBtn, "h 38!");
         p.add(header, "growx, wrap");
@@ -392,31 +393,49 @@ public class DashboardPage extends JPanel {
     }
 
     private JPanel statCard(String title, JLabel valueLabel, Color accent) {
-        JPanel card = new JPanel(new MigLayout("insets 18 16 18 16", "[grow]", "[]6[]")) {
+        JPanel card = new JPanel(new MigLayout("insets 18 18 18 18", "[8!][grow]", "[]6[]")) {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
                 g2.setColor(UIConstants.PANEL_COLOR);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 12, 12);
-                g2.setColor(accent);
-                g2.fillRoundRect(0, getHeight() - 4, getWidth(), 4, 0, 0);
+                g2.fillRoundRect(0, 0, getWidth(), getHeight(),
+                        UIConstants.BORDER_RADIUS_LARGE, UIConstants.BORDER_RADIUS_LARGE);
+                g2.setColor(UIConstants.withAlpha(accent, 40));
+                g2.drawRoundRect(0, 0, getWidth() - 1, getHeight() - 1,
+                        UIConstants.BORDER_RADIUS_LARGE, UIConstants.BORDER_RADIUS_LARGE);
                 g2.dispose();
             }
         };
         card.setOpaque(false);
-        valueLabel.setForeground(accent);
-        card.add(valueLabel, "wrap");
+        JPanel dot = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g.create();
+                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+                g2.setColor(accent);
+                g2.fillOval(0, 0, getWidth(), getHeight());
+                g2.dispose();
+            }
+        };
+        dot.setPreferredSize(new Dimension(10, 10));
+        dot.setOpaque(false);
+        JPanel textCol = new JPanel(new MigLayout("insets 0", "[grow]", "[]4[]"));
+        textCol.setOpaque(false);
+        valueLabel.setForeground(UIConstants.TEXT_COLOR);
+        textCol.add(valueLabel, "wrap");
         JLabel lbl = new JLabel(title);
         lbl.setFont(UIConstants.FONT_SMALL);
         lbl.setForeground(UIConstants.TEXT_SECONDARY);
-        card.add(lbl);
+        textCol.add(lbl);
+        card.add(dot, "aligny center");
+        card.add(textCol, "grow");
         return card;
     }
 
     private JLabel statVal(String text) {
         JLabel l = new JLabel(text);
-        l.setFont(new Font("Segoe UI", Font.BOLD, 22));
+        l.setFont(UIConstants.FONT_STAT);
         return l;
     }
 

@@ -251,8 +251,28 @@ public class ImportItemServiceImpl extends AbstractRemoteCrudService<ImportItem>
             if (userId == null) {
                 throw new IllegalArgumentException("User ID is required");
             }
+            if (canViewAllImportItems(userId)) {
+                LOGGER.debug("findItemsByUser: role may view all imports, returning full list for userId={}", userId);
+                return importItemDao.findAllItems();
+            }
             return importItemDao.findItemsByUser(userId);
         });
+    }
+
+    /**
+     * Operational roles work on system-wide import records (dashboard, clearance, payments).
+     */
+    private boolean canViewAllImportItems(Long userId) {
+        return userDao.findById(userId)
+                .map(User::getRole)
+                .map(role -> {
+                    if (role == null) {
+                        return false;
+                    }
+                    String r = role.trim().toUpperCase();
+                    return "ADMIN".equals(r) || "CUSTOMS_OFFICER".equals(r) || "FINANCE_OFFICER".equals(r);
+                })
+                .orElse(false);
     }
 
     @Override

@@ -175,7 +175,7 @@ public class ImportItemPage extends JPanel {
                 itemTable.getColumnModel().getColumn(i).setCellRenderer(TableFormatUtil.alternatingRenderer());
             }
         }
-        itemTable.getColumnModel().getColumn(9).setCellRenderer(TableFormatUtil.statusRenderer());
+        itemTable.getColumnModel().getColumn(9).setCellRenderer(TableFormatUtil.statusBadgeRenderer());
         TableFormatUtil.applyCurrencyColumn(itemTable, 4);
         TableFormatUtil.applyCurrencyColumn(itemTable, 6);
         TableFormatUtil.applyDateColumn(itemTable, 10);
@@ -255,14 +255,19 @@ public class ImportItemPage extends JPanel {
         new SwingWorker<List<ImportItem>, Void>() {
             protected List<ImportItem> doInBackground() throws Exception {
                 Long uid = CurrentSession.getLoggedInUserId();
-                return uid == null
-                    ? importItemService.findAllItems()
-                    : importItemService.findItemsByUser(uid);
+                List<ImportItem> items = uid == null
+                        ? importItemService.findAllItems()
+                        : importItemService.findItemsByUser(uid);
+                logger.debug("Import items RMI returned {} row(s) for userId={}", items.size(), uid);
+                return items;
             }
             protected void done() {
                 setLoading(false, " ");
                 try {
                     allItems = new ArrayList<>(get());
+                    if (allItems.isEmpty()) {
+                        logger.info("Import items list is empty for userId={}", CurrentSession.getLoggedInUserId());
+                    }
                     applyFilter();
                 } catch (Exception ex) {
                     Throwable root = ex;
@@ -273,7 +278,7 @@ public class ImportItemPage extends JPanel {
                     String msg = UserMessageUtil.friendly(ex,
                             "Unable to load import items. Please try again.");
                     status(msg, UIConstants.ERROR_COLOR);
-                    JOptionPane.showMessageDialog(shell, msg, UIConstants.APP_NAME,
+                    JOptionPane.showMessageDialog(shell, msg, UIConstants.APP_TITLE,
                             JOptionPane.ERROR_MESSAGE);
                 }
             }
